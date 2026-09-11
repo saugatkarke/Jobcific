@@ -2,9 +2,17 @@ import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { getPaddle } from "@/lib/paddle";
-import { isProPriceId } from "@/lib/pricing";
+import {
+  canStartCheckout,
+  intervalFromPriceId,
+  isProPriceId,
+} from "@/lib/pricing";
 import { user } from "@/lib/schema";
 import { getOptionalSession } from "@/lib/session";
+import {
+  latestSubscriptionRow,
+  proBillingIntervalFromRow,
+} from "@/lib/session-entitlement";
 
 export async function POST(req: NextRequest) {
   const session = await getOptionalSession(req.headers);
@@ -15,6 +23,17 @@ export async function POST(req: NextRequest) {
   const priceId = String(body.priceId || "");
   if (!isProPriceId(priceId)) {
     return NextResponse.json({ error: "INVALID_PRICE" }, { status: 400 });
+  }
+
+  const requestedInterval = intervalFromPriceId(priceId);
+  const subscribedInterval = proBillingIntervalFromRow(
+    await latestSubscriptionRow(session.user.id),
+  );
+  if (
+    !requestedInterval ||
+    !canStartCheckout(subscribedInterval, requestedInterval)
+  ) {
+    return NextResponse.json({ error: "ALREADY_SUBSCRIBED" }, { status: 409 });
   }
 
   const rows = await getDb().select().from(user).where(eq(user.id, session.user.id)).limit(1);

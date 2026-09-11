@@ -626,7 +626,14 @@ body {
   transition:
     background-color 0.15s ease,
     color 0.15s ease,
-    border-color 0.15s ease;
+    border-color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.btn-primary:disabled,
+.btn-secondary:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .hero-install {
@@ -1018,6 +1025,27 @@ body {
 
 .field {
   @apply mt-1 w-full rounded-[4px] border border-[var(--line)] bg-white px-3 py-2 text-sm outline-none focus:border-black;
+}
+
+.field:disabled {
+  background: #f6f7f9;
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.auth-feedback {
+  animation: auth-feedback-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes auth-feedback-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* --- Motion --- */
@@ -1831,7 +1859,7 @@ body {
     border-color 0.15s ease;
 }
 
-.pricing-card-cta:hover {
+.pricing-card-cta:hover:not(:disabled) {
   background: #262626;
 }
 
@@ -1854,6 +1882,10 @@ body {
 .pricing-card-cta:disabled {
   cursor: wait;
   opacity: 0.72;
+}
+
+.pricing-card-cta.is-subscribed:disabled {
+  cursor: default;
 }
 
 .pricing-legal {
@@ -1946,7 +1978,8 @@ body {
   .ats-scope.is-in-view .ats-ring,
   .ats-scope.is-in-view .ats-radar,
   .footer-strike,
-  .mesh-hero {
+  .mesh-hero,
+  .auth-feedback {
     animation: none;
   }
 

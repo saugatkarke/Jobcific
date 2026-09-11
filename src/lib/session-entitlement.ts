@@ -4,7 +4,55 @@ import { getAuth } from "./auth";
 import { getDb } from "./db";
 import { emptyEntitlement, resolveEntitlement } from "./entitlement";
 import { verifyAccessJwt } from "./extension-auth";
+import { intervalFromPriceId, type BillingInterval } from "./pricing";
 import { subscription } from "./schema";
+import { getOptionalSession } from "./session";
+
+export async function latestSubscriptionRow(userId: string) {
+  if (!process.env.DATABASE_URL) return null;
+  const rows = await getDb()
+    .select()
+    .from(subscription)
+    .where(eq(subscription.userId, userId))
+    .orderBy(desc(subscription.updatedAt))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export function proBillingIntervalFromRow(
+  row:
+    | {
+        plan: string;
+        status: string;
+        currentPeriodEnd: Date | string | null;
+        paddlePriceId: string;
+      }
+    | null
+    | undefined,
+): BillingInterval | null {
+  if (!row) return null;
+  const resolved = resolveEntitlement({
+    plan: row.plan,
+    status: row.status,
+    currentPeriodEnd: row.currentPeriodEnd,
+  });
+  if (resolved.plan !== "pro") return null;
+  return intervalFromPriceId(row.paddlePriceId);
+}
+
+export async function currentProBillingInterval(
+  headers: Headers,
+): Promise<BillingInterval | null> {
+  try {
+    const session = await getOptionalSession(headers);
+    if (!session?.user) return null;
+    return proBillingIntervalFromRow(
+      await latestSubscriptionRow(session.user.id),
+    );
+  } catch {
+    return null;
+  }
+}
 
 export async function entitlementPayload(req: NextRequest) {
   const header = req.headers.get("authorization") || "";
@@ -34,18 +82,13 @@ export async function entitlementPayload(req: NextRequest) {
     return { authenticated: true, email, ...emptyEntitlement() };
   }
 
-  const rows = await getDb()
-    .select()
-    .from(subscription)
-    .where(eq(subscription.userId, userId))
-    .orderBy(desc(subscription.updatedAt))
-    .limit(1);
+  const row = await latestSubscriptionRow(userId);
   const resolved = resolveEntitlement(
-    rows[0]
+    row
       ? {
-          plan: rows[0].plan,
-          status: rows[0].status,
-          currentPeriodEnd: rows[0].currentPeriodEnd,
+          plan: row.plan,
+          status: row.status,
+          currentPeriodEnd: row.currentPeriodEnd,
         }
       : null,
   );

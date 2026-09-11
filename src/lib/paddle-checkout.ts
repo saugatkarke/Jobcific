@@ -28,6 +28,12 @@ export async function startPaddleCheckout(
     if (res.status === 401) {
       return { status: "login" };
     }
+    if (res.status === 409) {
+      return {
+        status: "error",
+        message: "You already have this plan.",
+      };
+    }
     const data = (await res.json()) as {
       transactionId?: string;
       error?: string;

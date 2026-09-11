@@ -1,9 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState, type ReactNode } from "react";
+import { FormEvent, useRef, useState, type ReactNode } from "react";
 import { authClient } from "@/lib/auth-client";
-import { IconKey, IconUser, IconUserPlus } from "@/components/icons";
+import {
+  IconAlertCircle,
+  IconKey,
+  IconMail,
+  IconSpinner,
+  IconUser,
+  IconUserPlus,
+} from "@/components/icons";
 
 function AuthLink({
   href,
@@ -45,12 +52,56 @@ function Field({
   );
 }
 
+function AuthFeedback({
+  tone,
+  icon,
+  title,
+  message,
+}: {
+  tone: "error" | "success";
+  icon: ReactNode;
+  title?: string;
+  message: string;
+}) {
+  const styles =
+    tone === "error"
+      ? "border-red-200 bg-red-50 text-red-800"
+      : "border-emerald-200 bg-emerald-50 text-black";
+
+  return (
+    <div
+      role={tone === "error" ? "alert" : "status"}
+      className={`auth-feedback flex items-start gap-2.5 rounded-[10px] border px-3.5 py-3 ${styles}`}
+    >
+      <span className="mt-0.5 shrink-0">{icon}</span>
+      <div className="min-w-0">
+        {title ? <p className="text-sm font-bold leading-snug">{title}</p> : null}
+        <p className={`leading-snug ${title ? "mt-0.5 text-sm font-semibold" : "text-sm font-bold"}`}>
+          {message}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function AuthError({ message }: { message: string }) {
-  return <p className="text-sm text-red-600">{message}</p>;
+  return (
+    <AuthFeedback
+      tone="error"
+      icon={<IconAlertCircle className="h-[18px] w-[18px] text-red-600" />}
+      message={message}
+    />
+  );
 }
 
 function AuthNotice({ message }: { message: string }) {
-  return <p className="text-sm text-[var(--muted)]">{message}</p>;
+  return (
+    <AuthFeedback
+      tone="success"
+      icon={<IconMail className="h-[18px] w-[18px] text-emerald-700" />}
+      message={message}
+    />
+  );
 }
 
 export function LoginForm({ nextPath }: { nextPath: string }) {
@@ -113,8 +164,9 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
         <Field label="Password">
           <input name="password" type="password" required className="field" />
         </Field>
-        <button type="submit" className="btn-primary w-full" disabled={pending}>
-          Sign in
+        <button type="submit" className="btn-primary w-full gap-2" disabled={pending}>
+          {pending ? <IconSpinner className="h-4 w-4 animate-spin" /> : null}
+          {pending ? "Signing in..." : "Sign in"}
         </button>
       </form>
       <div className="flex items-center gap-3" aria-hidden>
@@ -148,41 +200,56 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
 
 export function SignupForm({ nextPath = "/account" }: { nextPath?: string }) {
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
   const [pending, setPending] = useState(false);
+  const [created, setCreated] = useState(false);
+  const submittingRef = useRef(false);
+  const locked = pending || created;
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submittingRef.current || created) return;
+    submittingRef.current = true;
     setError("");
-    setNotice("");
     setPending(true);
-    const formEl = event.currentTarget;
-    const form = new FormData(formEl);
-    const { error: result } = await authClient.signUp.email({
-      name: String(form.get("name") || ""),
-      email: String(form.get("email") || ""),
-      password: String(form.get("password") || ""),
-      callbackURL: nextPath,
-    });
-    setPending(false);
-    if (result) {
-      setError(result.message || "Could not create account.");
-      return;
+    const form = new FormData(event.currentTarget);
+    try {
+      const { error: result } = await authClient.signUp.email({
+        name: String(form.get("name") || ""),
+        email: String(form.get("email") || ""),
+        password: String(form.get("password") || ""),
+        callbackURL: nextPath,
+      });
+      if (result) {
+        submittingRef.current = false;
+        setError(result.message || "Could not create account.");
+        return;
+      }
+      setCreated(true);
+    } catch {
+      submittingRef.current = false;
+      setError("Could not create account.");
+    } finally {
+      setPending(false);
     }
-    setNotice("Account created. Check your inbox and verify your email before signing in.");
-    formEl.reset();
   }
 
   return (
-    <form className="space-y-4" onSubmit={onSubmit}>
+    <form className="space-y-4" onSubmit={onSubmit} aria-busy={pending}>
       <Field label="Name">
-        <input name="name" required className="field" />
+        <input name="name" required className="field" disabled={locked} />
       </Field>
       <Field label="Email">
-        <input name="email" type="email" required className="field" />
+        <input name="email" type="email" required className="field" disabled={locked} />
       </Field>
       <Field label="Password" hint="At least 8 characters.">
-        <input name="password" type="password" required minLength={8} className="field" />
+        <input
+          name="password"
+          type="password"
+          required
+          minLength={8}
+          className="field"
+          disabled={locked}
+        />
       </Field>
       <p className="text-xs text-[var(--muted)]">
         By creating an account you agree to the{" "}
@@ -195,11 +262,19 @@ export function SignupForm({ nextPath = "/account" }: { nextPath?: string }) {
         </Link>
         .
       </p>
-      <button type="submit" className="btn-primary w-full" disabled={pending}>
-        {pending ? "Creating account..." : "Create account"}
+      <button type="submit" className="btn-primary w-full gap-2" disabled={locked}>
+        {pending ? <IconSpinner className="h-4 w-4 animate-spin" /> : null}
+        {pending ? "Creating account..." : created ? "Account created" : "Create account"}
       </button>
       {error ? <AuthError message={error} /> : null}
-      {notice ? <AuthNotice message={notice} /> : null}
+      {created ? (
+        <AuthFeedback
+          tone="success"
+          icon={<IconMail className="h-[18px] w-[18px] text-emerald-700" />}
+          title="Account created"
+          message="Check your inbox and verify your email before signing in."
+        />
+      ) : null}
       <p className="flex flex-wrap items-center gap-x-1.5 border-t border-[var(--line)] pt-5 text-sm text-[var(--muted)]">
         Already have an account?
         <AuthLink href="/login" icon={<IconUser className="h-3.5 w-3.5" />}>
@@ -238,8 +313,9 @@ export function ForgotForm() {
       <Field label="Email">
         <input name="email" type="email" required className="field" />
       </Field>
-      <button type="submit" className="btn-primary w-full" disabled={pending}>
-        Send reset link
+      <button type="submit" className="btn-primary w-full gap-2" disabled={pending}>
+        {pending ? <IconSpinner className="h-4 w-4 animate-spin" /> : null}
+        {pending ? "Sending link..." : "Send reset link"}
       </button>
       {error ? <AuthError message={error} /> : null}
       {notice ? <AuthNotice message={notice} /> : null}
@@ -278,8 +354,9 @@ export function ResetForm({ token }: { token: string }) {
       <Field label="New password" hint="At least 8 characters.">
         <input name="password" type="password" required minLength={8} className="field" />
       </Field>
-      <button type="submit" className="btn-primary w-full" disabled={pending}>
-        Set new password
+      <button type="submit" className="btn-primary w-full gap-2" disabled={pending}>
+        {pending ? <IconSpinner className="h-4 w-4 animate-spin" /> : null}
+        {pending ? "Saving..." : "Set new password"}
       </button>
       {error ? <AuthError message={error} /> : null}
     </form>

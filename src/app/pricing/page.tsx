@@ -3,8 +3,11 @@ import { PricingCards } from "@/components/PricingCards";
 import { GridBand } from "@/components/PageGrid";
 import { Reveal } from "@/components/Reveal";
 import { monthlyPriceId, yearlyPriceId } from "@/lib/pricing";
+import { currentProBillingInterval } from "@/lib/session-entitlement";
+import { headers } from "next/headers";
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const subscribedInterval = await currentProBillingInterval(await headers());
   return (
     <MarketingShell>
       <GridBand as="section" className="border-b border-[var(--line)]">
@@ -23,6 +26,7 @@ export default function PricingPage() {
           <PricingCards
             monthlyPriceId={monthlyPriceId()}
             yearlyPriceId={yearlyPriceId()}
+            subscribedInterval={subscribedInterval}
           />
         </Reveal>
       </GridBand>

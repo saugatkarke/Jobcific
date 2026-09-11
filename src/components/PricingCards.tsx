@@ -16,8 +16,12 @@ import { startPaddleCheckout } from "@/lib/paddle-checkout";
 import {
   MONTHLY_AMOUNT,
   YEARLY_AMOUNT,
+  canStartCheckout,
+  defaultPricingInterval,
   formatPrice,
+  pricingProCta,
   yearlyDiscountPercent,
+  type BillingInterval,
 } from "@/lib/pricing";
 
 const SLOT_CYCLES = 1;
@@ -166,7 +170,7 @@ function SlotPrice({ value, slotId }: { value: string; slotId: string }) {
   );
 }
 
-type Interval = "monthly" | "yearly";
+type Interval = BillingInterval;
 
 const FREE_FEATURES = [
   "Listing metrics: date, salary, applicants",
@@ -189,11 +193,15 @@ const PRO_BADGE = "Skip one coffee. Get Pro.";
 export function PricingCards({
   monthlyPriceId,
   yearlyPriceId,
+  subscribedInterval,
 }: {
   monthlyPriceId: string;
   yearlyPriceId: string;
+  subscribedInterval: Interval | null;
 }) {
-  const [interval, setInterval] = useState<Interval>("monthly");
+  const [interval, setInterval] = useState<Interval>(() =>
+    defaultPricingInterval(subscribedInterval),
+  );
   const [pending, setPending] = useState(false);
   const [agreedToLegal, setAgreedToLegal] = useState(false);
   const [error, setError] = useState("");
@@ -206,6 +214,11 @@ export function PricingCards({
       : formatPrice(YEARLY_AMOUNT);
   const proPeriod = interval === "monthly" ? "Monthly" : "Yearly";
   const priceId = interval === "monthly" ? monthlyPriceId : yearlyPriceId;
+  const cta = pricingProCta({
+    subscribedInterval,
+    selectedInterval: interval,
+    pending,
+  });
 
   useLayoutEffect(() => {
     const root = toggleRef.current;
@@ -238,6 +251,7 @@ export function PricingCards({
   }
 
   async function subscribe() {
+    if (!canStartCheckout(subscribedInterval, interval)) return;
     setError("");
     if (!canStartSubscribe(agreedToLegal)) {
       setError("Please agree to the Terms of Service and Refund Policy.");
@@ -367,40 +381,46 @@ export function PricingCards({
             </p>
             <button
               type="button"
-              className="pricing-card-cta"
+              className={
+                cta.label === "Subscribed"
+                  ? "pricing-card-cta is-subscribed"
+                  : "pricing-card-cta"
+              }
               data-price-id={priceId}
-              disabled={pending}
+              disabled={cta.disabled}
               onClick={subscribe}
             >
-              {pending ? "Starting…" : "Subscribe"}
+              {cta.label}
             </button>
-            <label className="pricing-legal">
-              <input
-                type="checkbox"
-                checked={agreedToLegal}
-                onChange={(event) => {
-                  setAgreedToLegal(event.target.checked);
-                  if (event.target.checked) setError("");
-                }}
-              />
-              <span>
-                I agree to the{" "}
-                <Link
-                  href="/terms"
-                  onClick={(event) => event.stopPropagation()}
-                >
-                  Terms of Service
-                </Link>{" "}
-                and{" "}
-                <Link
-                  href="/refunds"
-                  onClick={(event) => event.stopPropagation()}
-                >
-                  Refund Policy
-                </Link>
-                .
-              </span>
-            </label>
+            {cta.showLegal ? (
+              <label className="pricing-legal">
+                <input
+                  type="checkbox"
+                  checked={agreedToLegal}
+                  onChange={(event) => {
+                    setAgreedToLegal(event.target.checked);
+                    if (event.target.checked) setError("");
+                  }}
+                />
+                <span>
+                  I agree to the{" "}
+                  <Link
+                    href="/terms"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    Terms of Service
+                  </Link>{" "}
+                  and{" "}
+                  <Link
+                    href="/refunds"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    Refund Policy
+                  </Link>
+                  .
+                </span>
+              </label>
+            ) : null}
           </div>
           <ul className="pricing-card-features">
             {PRO_FEATURES.map((feature) => (
