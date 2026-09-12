@@ -1,11 +1,6 @@
 import Link from "next/link";
 import { DISCLAIMER } from "@/lib/copy";
-import {
-  LEGAL_PAGES,
-  SUPPORT_EMAIL,
-  SUPPORT_PHONE,
-  SUPPORT_PHONE_TEL,
-} from "@/lib/legal";
+import { LEGAL_PAGES } from "@/lib/legal";
 import { FooterWhackAMole } from "./FooterWhackAMole";
 import { GridBand } from "./PageGrid";
 import { Logo } from "./Logo";
@@ -16,7 +11,7 @@ export function SiteFooter() {
       <FooterWhackAMole />
       <div className="col-span-12 px-4 py-10 md:col-span-3">
         <div className="flex items-center">
-          <Logo className="h-7 w-auto" />
+          <Logo />
         </div>
         <p className="mt-3 text-sm text-[var(--muted)]">
           Track Indeed and Seek applications locally. Upgrade here for Hide jobs
@@ -69,14 +64,6 @@ export function SiteFooter() {
             </li>
           ))}
         </ul>
-        <p className="mt-4 space-y-1 text-sm text-[var(--muted)]">
-          <a href={`mailto:${SUPPORT_EMAIL}`} className="block hover:text-black">
-            {SUPPORT_EMAIL}
-          </a>
-          <a href={`tel:${SUPPORT_PHONE_TEL}`} className="block hover:text-black">
-            {SUPPORT_PHONE}
-          </a>
-        </p>
       </div>
       <p className="col-span-12 border-t border-[var(--line)] px-4 py-4 text-center text-xs text-[var(--muted)]">
         {DISCLAIMER}
