@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" fill="none">
+  <defs>
+    <linearGradient id="mint" x1="600" y1="520" x2="120" y2="80" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#20FC8F" stop-opacity=".24"/>
+      <stop offset=".7" stop-color="#B9F7DA" stop-opacity=".13"/>
+      <stop offset="1" stop-color="#E8F2EE" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="600" y1="520" x2="170" y2="150" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FDB833" stop-opacity=".18"/>
+      <stop offset=".72" stop-color="#F6E4BC" stop-opacity=".1"/>
+      <stop offset="1" stop-color="#F7FAF8" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <g>
+    <path d="M600 520C512 430 332 314 0 270V352C286 371 472 451 568 520H600Z" fill="url(#mint)"/>
+    <path d="M600 520C526 398 354 235 42 155L20 223C306 287 484 431 575 520H600Z" fill="url(#gold)"/>
+    <path d="M600 520C545 366 414 179 173 72L145 132C367 230 500 407 581 520H600Z" fill="url(#mint)"/>
+    <path d="M600 520C563 339 483 136 322 25L286 78C438 188 523 397 587 520H600Z" fill="url(#gold)"/>
+    <path d="M600 520C579 320 548 116 458 4L420 44C510 173 553 394 593 520H600Z" fill="url(#mint)"/>
+    <path d="M600 520C594 307 592 105 574 0L544 15C565 149 579 390 597 520H600Z" fill="url(#gold)"/>
+  </g>
+  <g transform="translate(1200 0) scale(-1 1)">
+    <path d="M600 520C512 430 332 314 0 270V352C286 371 472 451 568 520H600Z" fill="url(#mint)"/>
+    <path d="M600 520C526 398 354 235 42 155L20 223C306 287 484 431 575 520H600Z" fill="url(#gold)"/>
+    <path d="M600 520C545 366 414 179 173 72L145 132C367 230 500 407 581 520H600Z" fill="url(#mint)"/>
+    <path d="M600 520C563 339 483 136 322 25L286 78C438 188 523 397 587 520H600Z" fill="url(#gold)"/>
+    <path d="M600 520C579 320 548 116 458 4L420 44C510 173 553 394 593 520H600Z" fill="url(#mint)"/>
+    <path d="M600 520C594 307 592 105 574 0L544 15C565 149 579 390 597 520H600Z" fill="url(#gold)"/>
+  </g>
+  <g stroke="#879890" stroke-opacity=".1" stroke-width="2">
+    <path d="M600 516C506 384 330 231 21 173"/>
+    <path d="M600 516C538 343 410 152 174 67"/>
+    <path d="M600 516C568 316 499 102 331 22"/>
+    <path d="M600 516C694 384 870 231 1179 173"/>
+    <path d="M600 516C662 343 790 152 1026 67"/>
+    <path d="M600 516C632 316 701 102 869 22"/>
+  </g>
+</svg>
