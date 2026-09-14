@@ -19,6 +19,8 @@ import {
   canStartCheckout,
   defaultPricingInterval,
   formatPrice,
+  pricingCardOrder,
+  pricingIntervalTabs,
   pricingProCta,
   yearlyDiscountPercent,
   type BillingInterval,
@@ -53,7 +55,7 @@ function markSlotPlayed(id: string) {
   try {
     sessionStorage.setItem(`${SLOT_SESSION_KEY}:${id}`, "1");
   } catch {
-    // Private mode / blocked storage — skip persistence.
+    // Private mode or blocked storage: skip persistence.
   }
 }
 
@@ -194,14 +196,18 @@ export function PricingCards({
   monthlyPriceId,
   yearlyPriceId,
   subscribedInterval,
+  isAuthenticated,
 }: {
   monthlyPriceId: string;
   yearlyPriceId: string;
   subscribedInterval: Interval | null;
+  isAuthenticated: boolean;
 }) {
   const [interval, setInterval] = useState<Interval>(() =>
     defaultPricingInterval(subscribedInterval),
   );
+  const cardOrder = pricingCardOrder(isAuthenticated);
+  const intervalTabs = pricingIntervalTabs(subscribedInterval);
   const [pending, setPending] = useState(false);
   const [agreedToLegal, setAgreedToLegal] = useState(false);
   const [error, setError] = useState("");
@@ -242,7 +248,7 @@ export function PricingCards({
       observer.observe(option);
     }
     return () => observer.disconnect();
-  }, [interval, yearlyOff]);
+  }, [interval, subscribedInterval, yearlyOff]);
 
   function onToggleKeyDown(e: KeyboardEvent<HTMLDivElement>) {
     if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
@@ -295,149 +301,157 @@ export function PricingCards({
             }
           />
         ) : null}
-        <button
-          type="button"
-          role="radio"
-          aria-checked={interval === "monthly"}
-          className="pricing-toggle-option"
-          onClick={() => setInterval("monthly")}
-        >
-          Monthly
-        </button>
-        <button
-          type="button"
-          role="radio"
-          aria-checked={interval === "yearly"}
-          className="pricing-toggle-option"
-          onClick={() => setInterval("yearly")}
-        >
-          Yearly
-          {yearlyOff > 0 ? (
-            <span className="pricing-toggle-save">-{yearlyOff}%</span>
-          ) : null}
-        </button>
+        {intervalTabs.map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            role="radio"
+            aria-checked={interval === tab}
+            className="pricing-toggle-option"
+            onClick={() => setInterval(tab)}
+          >
+            {tab === "monthly" ? "Monthly" : "Yearly"}
+            {tab === "yearly" && yearlyOff > 0 ? (
+              <span className="pricing-toggle-save">-{yearlyOff}%</span>
+            ) : null}
+          </button>
+        ))}
       </div>
 
       <div className="mx-auto mt-8 grid w-full items-stretch gap-5 md:w-[90%] md:grid-cols-12">
-        <article className="pricing-card md:col-span-6">
-          <div className="pricing-card-head pricing-card-head-free">
-            <h2 className="text-[17px] font-medium tracking-tight">Free</h2>
-            <p className="pricing-card-price tabular-nums">
-              <span>$0</span>
-              <span className="pricing-card-period">/forever</span>
-            </p>
-            <div className="pricing-card-rule" aria-hidden="true" />
-            <p className="pricing-card-tagline">
-              Track Indeed and Seek without paying. Metrics, save, and a local
-              board.
-            </p>
-            <HeroInstallSplit
-              variant="fill"
-              buttonClassName="pricing-card-cta pricing-card-cta-secondary"
-              seekUrl={SEEK_CWS_URL}
-              indeedUrl={INDEED_CWS_URL}
-            />
-          </div>
-          <ul className="pricing-card-features">
-            {FREE_FEATURES.map((feature) => (
-              <li key={feature}>
-                <IconCheckCircle className="pricing-card-check" />
-                {feature}
-              </li>
-            ))}
-          </ul>
-        </article>
-
-        <article className="pricing-card md:col-span-6">
-          <div className="pricing-card-head pricing-card-head-pro">
-            <div className="pricing-card-title">
-              <h2 className="text-[17px] font-medium tracking-tight">Pro</h2>
-              <div
-                className={
-                  interval === "monthly"
-                    ? "pricing-card-badge-slot is-in"
-                    : "pricing-card-badge-slot"
-                }
-                aria-hidden={interval !== "monthly"}
-              >
-                <span className="pricing-card-badge">
-                  <IconCoffee className="pricing-card-badge-icon" />
-                  {PRO_BADGE}
-                </span>
-              </div>
-            </div>
-            <p className="pricing-card-price tabular-nums">
-              <SlotPrice key={interval} value={proPrice} slotId={interval} />
-              <span className="pricing-card-period">
-                <span key={proPeriod} className="pricing-card-period-text">
-                  /{proPeriod}
-                </span>
-              </span>
-            </p>
-            <div className="pricing-card-rule" aria-hidden="true" />
-            <p className="pricing-card-tagline">
-              Best for people who want to hide listings and score a resume
-              against the JD.
-            </p>
-            <button
-              type="button"
-              className={
-                cta.label === "Subscribed"
-                  ? "pricing-card-cta is-subscribed"
-                  : "pricing-card-cta"
-              }
-              data-price-id={priceId}
-              disabled={cta.disabled}
-              onClick={subscribe}
-            >
-              {cta.label}
-            </button>
-            {cta.showLegal ? (
-              <label className="pricing-legal">
-                <input
-                  type="checkbox"
-                  checked={agreedToLegal}
-                  onChange={(event) => {
-                    setAgreedToLegal(event.target.checked);
-                    if (event.target.checked) setError("");
-                  }}
+        {cardOrder.map((card) =>
+          card === "free" ? (
+            <article key="free" className="pricing-card md:col-span-6">
+              <div className="pricing-card-head pricing-card-head-free">
+                <h2 className="text-[17px] font-medium tracking-tight">Free</h2>
+                <p className="pricing-card-price tabular-nums">
+                  <span>$0</span>
+                  <span className="pricing-card-period">/forever</span>
+                </p>
+                <div className="pricing-card-rule" aria-hidden="true" />
+                <p className="pricing-card-tagline">
+                  Track Indeed and Seek without paying. Metrics, save, and a local
+                  board.
+                </p>
+                <HeroInstallSplit
+                  variant="fill"
+                  buttonClassName="pricing-card-cta pricing-card-cta-secondary"
+                  seekUrl={SEEK_CWS_URL}
+                  indeedUrl={INDEED_CWS_URL}
                 />
-                <span>
-                  I agree to the{" "}
-                  <Link
-                    href="/terms"
-                    onClick={(event) => event.stopPropagation()}
+              </div>
+              <ul className="pricing-card-features">
+                {FREE_FEATURES.map((feature) => (
+                  <li key={feature}>
+                    <IconCheckCircle className="pricing-card-check" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+            </article>
+          ) : (
+            <article key="pro" className="pricing-card md:col-span-6">
+              <div className="pricing-card-head pricing-card-head-pro">
+                <div className="pricing-card-title">
+                  <h2 className="text-[17px] font-medium tracking-tight">Pro</h2>
+                  <div
+                    className={
+                      interval === "monthly"
+                        ? "pricing-card-badge-slot is-in"
+                        : "pricing-card-badge-slot"
+                    }
+                    aria-hidden={interval !== "monthly"}
                   >
-                    Terms of Service
-                  </Link>{" "}
-                  and{" "}
-                  <Link
-                    href="/refunds"
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    Refund Policy
-                  </Link>
-                  .
-                </span>
-              </label>
-            ) : null}
-          </div>
-          <ul className="pricing-card-features">
-            {PRO_FEATURES.map((feature) => (
-              <li key={feature}>
-                <IconCheckCircle className="pricing-card-check" />
-                {feature}
-              </li>
-            ))}
-          </ul>
-        </article>
+                    <span className="pricing-card-badge">
+                      <IconCoffee className="pricing-card-badge-icon" />
+                      {PRO_BADGE}
+                    </span>
+                  </div>
+                </div>
+                <p className="pricing-card-price tabular-nums">
+                  <SlotPrice key={interval} value={proPrice} slotId={interval} />
+                  <span className="pricing-card-period">
+                    <span key={proPeriod} className="pricing-card-period-text">
+                      /{proPeriod}
+                    </span>
+                  </span>
+                </p>
+                <div className="pricing-card-rule" aria-hidden="true" />
+                <p className="pricing-card-tagline">
+                  Best for people who want to hide listings and score a resume
+                  against the JD.
+                </p>
+                <button
+                  type="button"
+                  className={
+                    cta.label === "Subscribed"
+                      ? "pricing-card-cta is-subscribed"
+                      : "pricing-card-cta"
+                  }
+                  data-price-id={priceId}
+                  disabled={cta.disabled}
+                  onClick={subscribe}
+                >
+                  {cta.label}
+                </button>
+                {cta.showLegal ? (
+                  <div className="pricing-legal-block">
+                    <label className="pricing-legal">
+                      <input
+                        type="checkbox"
+                        checked={agreedToLegal}
+                        aria-describedby={error ? "pricing-legal-error" : undefined}
+                        onChange={(event) => {
+                          setAgreedToLegal(event.target.checked);
+                          if (event.target.checked) setError("");
+                        }}
+                      />
+                      <span>
+                        I agree to the{" "}
+                        <Link
+                          href="/terms"
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          Terms of Service
+                        </Link>{" "}
+                        and{" "}
+                        <Link
+                          href="/refunds"
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          Refund Policy
+                        </Link>
+                        .
+                      </span>
+                    </label>
+                    {error ? (
+                      <p
+                        id="pricing-legal-error"
+                        className="pricing-legal-error"
+                        role="alert"
+                      >
+                        {error}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : error ? (
+                  <p className="pricing-legal-error" role="alert">
+                    {error}
+                  </p>
+                ) : null}
+              </div>
+              <ul className="pricing-card-features">
+                {PRO_FEATURES.map((feature) => (
+                  <li key={feature}>
+                    <IconCheckCircle className="pricing-card-check" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+            </article>
+          ),
+        )}
       </div>
-
-      {error ? (
-        <p className="mt-5 text-sm text-red-600">
-          {error}
-        </p>
-      ) : null}
     </div>
   );
 }

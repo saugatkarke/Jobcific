@@ -33,6 +33,20 @@ export function defaultPricingInterval(
   return subscribedInterval ? "yearly" : "monthly";
 }
 
+export function pricingCardOrder(
+  isAuthenticated: boolean,
+): Array<"free" | "pro"> {
+  return isAuthenticated ? ["pro", "free"] : ["free", "pro"];
+}
+
+export function pricingIntervalTabs(
+  subscribedInterval: BillingInterval | null = null,
+): BillingInterval[] {
+  return subscribedInterval === "monthly"
+    ? ["yearly", "monthly"]
+    : ["monthly", "yearly"];
+}
+
 export function pricingProCta({
   subscribedInterval,
   selectedInterval,

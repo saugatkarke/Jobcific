@@ -6,6 +6,8 @@ import {
   defaultPricingInterval,
   formatPrice,
   intervalFromPriceId,
+  pricingCardOrder,
+  pricingIntervalTabs,
   pricingProCta,
   yearlyDiscountPercent,
 } from "./pricing";
@@ -41,6 +43,21 @@ describe("pro pricing CTA", () => {
   it("stays on yearly for yearly subscribers and monthly for everyone else", () => {
     expect(defaultPricingInterval("yearly")).toBe("yearly");
     expect(defaultPricingInterval(null)).toBe("monthly");
+  });
+
+  it("keeps Monthly selected for logged-in free users", () => {
+    expect(defaultPricingInterval(null)).toBe("monthly");
+  });
+
+  it("puts Free first for logged-out visitors and Pro first when logged in", () => {
+    expect(pricingCardOrder(false)).toEqual(["free", "pro"]);
+    expect(pricingCardOrder(true)).toEqual(["pro", "free"]);
+  });
+
+  it("puts Yearly first only for monthly subscribers", () => {
+    expect(pricingIntervalTabs(null)).toEqual(["monthly", "yearly"]);
+    expect(pricingIntervalTabs("yearly")).toEqual(["monthly", "yearly"]);
+    expect(pricingIntervalTabs("monthly")).toEqual(["yearly", "monthly"]);
   });
 
   it("disables the current plan with Subscribed", () => {

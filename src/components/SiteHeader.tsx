@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { GridBand } from "./PageGrid";
 import { IconLogout, IconStar, IconUser } from "./icons";
+import { PendingNavButton } from "./BusyButton";
 import { Logo } from "./Logo";
 import { useSession } from "./SessionProvider";
 import { APP_NAME } from "@/lib/copy";
@@ -34,74 +35,79 @@ function HeaderRating() {
 }
 
 export function SiteHeader() {
-  const { email, signOut } = useSession();
+  const { email, name, signOut } = useSession();
 
   return (
     <GridBand
       as="header"
       className="header-rule sticky top-0 z-20 bg-white/95 backdrop-blur-sm"
     >
-      <Link
-        href="/"
-        aria-label={APP_NAME}
-        className="col-span-4 flex h-14 items-center gap-2 px-3 text-sm font-medium md:col-span-3 md:px-4"
-      >
-        <Logo priority />
-      </Link>
-      <nav className="hidden items-center justify-center gap-6 px-4 text-sm text-neutral-600 md:col-span-6 md:flex">
+      <div className="col-span-4 flex h-20 items-center gap-6 px-3 md:col-span-7 md:gap-8 md:px-4">
         <Link
-          href="/#features"
-          className="transition-colors duration-200 hover:text-black"
+          href="/"
+          aria-label={APP_NAME}
+          className="flex shrink-0 items-center text-sm font-medium"
         >
-          Features
+          <Logo priority />
         </Link>
-        <Link
-          href="/pricing"
-          className="transition-colors duration-200 hover:text-black"
-        >
-          Pricing
-        </Link>
-        <Link
-          href="/privacy"
-          className="transition-colors duration-200 hover:text-black"
-        >
-          Privacy
-        </Link>
-      </nav>
-      <div className="col-span-8 flex h-14 items-center justify-end gap-2 px-3 text-sm md:col-span-3 md:gap-3 md:px-4">
+        <nav className="hidden items-center gap-4 text-sm text-neutral-600 md:flex lg:gap-6">
+          <Link
+            href="/#features"
+            className="whitespace-nowrap transition-colors duration-200 hover:text-black"
+          >
+            Features
+          </Link>
+          <Link
+            href="/pricing"
+            className="whitespace-nowrap transition-colors duration-200 hover:text-black"
+          >
+            Pricing
+          </Link>
+          <Link
+            href="/privacy"
+            className="whitespace-nowrap transition-colors duration-200 hover:text-black"
+          >
+            Privacy
+          </Link>
+        </nav>
+      </div>
+      <div className="col-span-8 flex h-20 items-center justify-end gap-2 px-3 text-sm md:col-span-5 md:gap-3 md:px-4">
         {email ? (
           <>
             <Link
               href="/account"
-              className="flex items-center gap-1.5 text-neutral-700 transition-colors duration-200 hover:text-black"
+              aria-label={name ? `${name}, account` : "Account"}
+              className="flex min-w-0 items-center gap-1.5 text-neutral-700 transition-colors duration-200 hover:text-black"
             >
-              <IconUser className="h-4 w-4" />
-              <span className="hidden md:inline">Account</span>
+              <IconUser className="h-4 w-4 shrink-0" />
+              <span className="hidden truncate md:inline">
+                {name || "Account"}
+              </span>
             </Link>
             <button
               type="button"
               onClick={signOut}
-              className="flex items-center gap-1.5 text-neutral-700 transition-colors duration-200 hover:text-black"
+              className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-neutral-700 transition-colors duration-200 hover:text-black"
             >
-              <IconLogout className="h-4 w-4" />
+              <IconLogout className="h-4 w-4 shrink-0" />
               Sign out
             </button>
           </>
         ) : (
           <>
             <HeaderRating />
-            <Link
+            <PendingNavButton
               href="/login"
-              className="text-neutral-700 transition-colors duration-200 hover:text-black"
+              className="inline-flex items-center gap-1.5 border-0 bg-transparent p-0 font-[inherit] text-sm text-neutral-700 transition-colors duration-200 hover:text-black disabled:opacity-100"
             >
               Login
-            </Link>
-            <Link
+            </PendingNavButton>
+            <PendingNavButton
               href="/signup"
               className="btn-primary whitespace-nowrap px-3 py-2 text-xs md:px-4 md:py-2.5 md:text-sm"
             >
               Get started
-            </Link>
+            </PendingNavButton>
           </>
         )}
       </div>

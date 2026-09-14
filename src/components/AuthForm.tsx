@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { FormEvent, useRef, useState, type ReactNode } from "react";
 import { authClient } from "@/lib/auth-client";
+import { authPageHref, betterAuthAcceptsCallbackURL } from "@/lib/auth-origins";
+import { BusyButton, holdBusy, paintPending } from "@/components/BusyButton";
 import {
   IconAlertCircle,
   IconKey,
   IconMail,
-  IconSpinner,
   IconUser,
   IconUserPlus,
 } from "@/components/icons";
@@ -108,49 +109,79 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [pending, setPending] = useState(false);
+  const [pending, setPending] = useState<"password" | "magic" | null>(null);
+  const submittingRef = useRef(false);
+  const busy = pending !== null;
 
   async function onPassword(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submittingRef.current) return;
+    const form = new FormData(event.currentTarget);
+    submittingRef.current = true;
     setError("");
     setNotice("");
-    setPending(true);
-    const form = new FormData(event.currentTarget);
-    const { error: result } = await authClient.signIn.email({
-      email,
-      password: String(form.get("password") || ""),
-      callbackURL: nextPath,
-    });
-    setPending(false);
-    if (result) {
-      const status = (result as { status?: number }).status;
-      if (status === 403) {
-        setError("Please verify your email first. We sent you a fresh verification link.");
+    await paintPending(() => setPending("password"));
+    const startedAt = Date.now();
+    try {
+      const { error: result } = await authClient.signIn.email({
+        email,
+        password: String(form.get("password") || ""),
+      });
+      if (result) {
+        await holdBusy(startedAt);
+        submittingRef.current = false;
+        setPending(null);
+        const status = (result as { status?: number }).status;
+        const code = (result as { code?: string }).code;
+        if (status === 403 || code === "EMAIL_NOT_VERIFIED") {
+          setError("Please verify your email first. We sent you a fresh verification link.");
+          return;
+        }
+        setError(result.message || "Could not sign in.");
         return;
       }
-      setError(result.message || "Could not sign in.");
+      window.location.assign(nextPath);
+    } catch {
+      await holdBusy(startedAt);
+      submittingRef.current = false;
+      setPending(null);
+      setError("Could not sign in.");
     }
   }
 
   async function onMagic() {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setError("");
     setNotice("");
-    setPending(true);
-    const { error: result } = await authClient.signIn.magicLink({
-      email,
-      callbackURL: nextPath,
-    });
-    setPending(false);
-    if (result) {
+    await paintPending(() => setPending("magic"));
+    const startedAt = Date.now();
+    try {
+      const { error: result } = await authClient.signIn.magicLink({
+        email,
+        callbackURL: betterAuthAcceptsCallbackURL(nextPath)
+          ? nextPath
+          : "/account",
+      });
+      await holdBusy(startedAt);
+      submittingRef.current = false;
+      setPending(null);
+      if (result) {
+        setError("Could not send email.");
+        return;
+      }
+      setNotice("Check your email for a sign-in link.");
+    } catch {
+      await holdBusy(startedAt);
+      submittingRef.current = false;
+      setPending(null);
       setError("Could not send email.");
-      return;
     }
-    setNotice("Check your email for a sign-in link.");
   }
 
   return (
     <div className="space-y-6">
-      <form className="space-y-4" onSubmit={onPassword}>
+      <form className="space-y-4" onSubmit={onPassword} aria-busy={pending === "password"}>
         <Field label="Email">
           <input
             name="email"
@@ -159,15 +190,26 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             className="field"
+            disabled={busy}
           />
         </Field>
         <Field label="Password">
-          <input name="password" type="password" required className="field" />
+          <input
+            name="password"
+            type="password"
+            required
+            className="field"
+            disabled={busy}
+          />
         </Field>
-        <button type="submit" className="btn-primary w-full gap-2" disabled={pending}>
-          {pending ? <IconSpinner className="h-4 w-4 animate-spin" /> : null}
-          {pending ? "Signing in..." : "Sign in"}
-        </button>
+        <BusyButton
+          type="submit"
+          busy={pending === "password"}
+          busyLabel="Signing in..."
+          disabled={busy}
+        >
+          Sign in
+        </BusyButton>
       </form>
       <div className="flex items-center gap-3" aria-hidden>
         <span className="h-px flex-1 bg-[var(--line)]" />
@@ -176,18 +218,20 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
         </span>
         <span className="h-px flex-1 bg-[var(--line)]" />
       </div>
-      <button
+      <BusyButton
         type="button"
-        className="btn-secondary w-full"
-        disabled={pending || !email}
+        className="btn-secondary w-full gap-2"
+        busy={pending === "magic"}
+        busyLabel="Sending link..."
+        disabled={busy || !email}
         onClick={onMagic}
       >
         Email me a magic link
-      </button>
+      </BusyButton>
       {error ? <AuthError message={error} /> : null}
       {notice ? <AuthNotice message={notice} /> : null}
       <p className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-[var(--line)] pt-5 text-sm text-[var(--muted)]">
-        <AuthLink href="/signup" icon={<IconUserPlus className="h-3.5 w-3.5" />}>
+        <AuthLink href={authPageHref("/signup", nextPath)} icon={<IconUserPlus className="h-3.5 w-3.5" />}>
           Create an account
         </AuthLink>
         <AuthLink href="/forgot-password" icon={<IconKey className="h-3.5 w-3.5" />}>
@@ -208,16 +252,19 @@ export function SignupForm({ nextPath = "/account" }: { nextPath?: string }) {
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submittingRef.current || created) return;
+    const form = new FormData(event.currentTarget);
     submittingRef.current = true;
     setError("");
-    setPending(true);
-    const form = new FormData(event.currentTarget);
+    await paintPending(() => setPending(true));
+    const startedAt = Date.now();
     try {
       const { error: result } = await authClient.signUp.email({
         name: String(form.get("name") || ""),
         email: String(form.get("email") || ""),
         password: String(form.get("password") || ""),
-        callbackURL: nextPath,
+        callbackURL: betterAuthAcceptsCallbackURL(nextPath)
+          ? nextPath
+          : "/account",
       });
       if (result) {
         submittingRef.current = false;
@@ -229,6 +276,7 @@ export function SignupForm({ nextPath = "/account" }: { nextPath?: string }) {
       submittingRef.current = false;
       setError("Could not create account.");
     } finally {
+      await holdBusy(startedAt);
       setPending(false);
     }
   }
@@ -262,10 +310,9 @@ export function SignupForm({ nextPath = "/account" }: { nextPath?: string }) {
         </Link>
         .
       </p>
-      <button type="submit" className="btn-primary w-full gap-2" disabled={locked}>
-        {pending ? <IconSpinner className="h-4 w-4 animate-spin" /> : null}
-        {pending ? "Creating account..." : created ? "Account created" : "Create account"}
-      </button>
+      <BusyButton type="submit" busy={pending} busyLabel="Creating account..." disabled={locked}>
+        {created ? "Account created" : "Create account"}
+      </BusyButton>
       {error ? <AuthError message={error} /> : null}
       {created ? (
         <AuthFeedback
@@ -277,7 +324,7 @@ export function SignupForm({ nextPath = "/account" }: { nextPath?: string }) {
       ) : null}
       <p className="flex flex-wrap items-center gap-x-1.5 border-t border-[var(--line)] pt-5 text-sm text-[var(--muted)]">
         Already have an account?
-        <AuthLink href="/login" icon={<IconUser className="h-3.5 w-3.5" />}>
+        <AuthLink href={authPageHref("/login", nextPath)} icon={<IconUser className="h-3.5 w-3.5" />}>
           Sign in
         </AuthLink>
       </p>
@@ -292,14 +339,16 @@ export function ForgotForm() {
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const form = new FormData(event.currentTarget);
     setError("");
     setNotice("");
-    setPending(true);
-    const form = new FormData(event.currentTarget);
+    await paintPending(() => setPending(true));
+    const startedAt = Date.now();
     const { error: result } = await authClient.requestPasswordReset({
       email: String(form.get("email") || ""),
       redirectTo: "/reset-password",
     });
+    await holdBusy(startedAt);
     setPending(false);
     if (result) {
       setError("Could not send email.");
@@ -311,12 +360,11 @@ export function ForgotForm() {
   return (
     <form className="space-y-4" onSubmit={onSubmit}>
       <Field label="Email">
-        <input name="email" type="email" required className="field" />
+        <input name="email" type="email" required className="field" disabled={pending} />
       </Field>
-      <button type="submit" className="btn-primary w-full gap-2" disabled={pending}>
-        {pending ? <IconSpinner className="h-4 w-4 animate-spin" /> : null}
-        {pending ? "Sending link..." : "Send reset link"}
-      </button>
+      <BusyButton type="submit" busy={pending} busyLabel="Sending link...">
+        Send reset link
+      </BusyButton>
       {error ? <AuthError message={error} /> : null}
       {notice ? <AuthNotice message={notice} /> : null}
       <p className="border-t border-[var(--line)] pt-5 text-sm text-[var(--muted)]">
@@ -334,15 +382,17 @@ export function ResetForm({ token }: { token: string }) {
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setError("");
-    setPending(true);
     const form = new FormData(event.currentTarget);
+    setError("");
+    await paintPending(() => setPending(true));
+    const startedAt = Date.now();
     const { error: result } = await authClient.resetPassword({
       token,
       newPassword: String(form.get("password") || ""),
     });
-    setPending(false);
     if (result) {
+      await holdBusy(startedAt);
+      setPending(false);
       setError(result.message || "Could not reset password.");
       return;
     }
@@ -352,12 +402,11 @@ export function ResetForm({ token }: { token: string }) {
   return (
     <form className="space-y-4" onSubmit={onSubmit}>
       <Field label="New password" hint="At least 8 characters.">
-        <input name="password" type="password" required minLength={8} className="field" />
+        <input name="password" type="password" required minLength={8} className="field" disabled={pending} />
       </Field>
-      <button type="submit" className="btn-primary w-full gap-2" disabled={pending}>
-        {pending ? <IconSpinner className="h-4 w-4 animate-spin" /> : null}
-        {pending ? "Saving..." : "Set new password"}
-      </button>
+      <BusyButton type="submit" busy={pending} busyLabel="Saving...">
+        Set new password
+      </BusyButton>
       {error ? <AuthError message={error} /> : null}
     </form>
   );

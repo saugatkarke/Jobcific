@@ -4,10 +4,15 @@ import { GridBand } from "@/components/PageGrid";
 import { Reveal } from "@/components/Reveal";
 import { monthlyPriceId, yearlyPriceId } from "@/lib/pricing";
 import { currentProBillingInterval } from "@/lib/session-entitlement";
+import { getOptionalSession } from "@/lib/session";
 import { headers } from "next/headers";
 
 export default async function PricingPage() {
-  const subscribedInterval = await currentProBillingInterval(await headers());
+  const requestHeaders = await headers();
+  const [subscribedInterval, session] = await Promise.all([
+    currentProBillingInterval(requestHeaders),
+    getOptionalSession(requestHeaders),
+  ]);
   return (
     <MarketingShell>
       <GridBand as="section" className="border-b border-[var(--line)]">
@@ -27,6 +32,7 @@ export default async function PricingPage() {
             monthlyPriceId={monthlyPriceId()}
             yearlyPriceId={yearlyPriceId()}
             subscribedInterval={subscribedInterval}
+            isAuthenticated={Boolean(session?.user)}
           />
         </Reveal>
       </GridBand>
