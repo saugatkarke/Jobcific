@@ -9,7 +9,7 @@ const ITEMS = [
   },
   {
     q: "Do you store my jobs or resume?",
-    a: "No. Job descriptions, tracked jobs, resumes, and ATS API keys stay in your browser. This website only stores your email, account secrets, Paddle IDs, and subscription status.",
+    a: "Your tracked jobs, board, notes, and uploaded resume stay in your browser. ATS scoring runs on-device when Chrome's built-in AI is available. When it isn't, the extension sends the resume text and job description to us and on to the Google Gemini API for that one score, and we don't keep that text afterwards. See the Privacy Policy for details.",
   },
   {
     q: "How do payments work?",
