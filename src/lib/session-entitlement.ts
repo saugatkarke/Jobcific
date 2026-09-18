@@ -8,6 +8,15 @@ import { intervalFromPriceId, type BillingInterval } from "./pricing";
 import { subscription } from "./schema";
 import { getOptionalSession } from "./session";
 
+export async function extensionClaimsFromRequest(source: {
+  headers: Headers;
+}): Promise<{ sub: string; email: string } | null> {
+  const header = source.headers.get("authorization") || "";
+  const match = header.match(/^Bearer\s+(.+)$/i);
+  if (!match) return null;
+  return verifyAccessJwt(match[1]);
+}
+
 export async function latestSubscriptionRow(userId: string) {
   if (!process.env.DATABASE_URL) return null;
   const rows = await getDb()
@@ -55,18 +64,11 @@ export async function currentProBillingInterval(
 }
 
 export async function entitlementPayload(req: NextRequest) {
-  const header = req.headers.get("authorization") || "";
-  const bearer = header.startsWith("Bearer ") ? header.slice(7) : "";
-  let userId: string | null = null;
-  let email: string | null = null;
+  const claims = await extensionClaimsFromRequest(req);
+  let userId: string | null = claims?.sub ?? null;
+  let email: string | null = claims?.email ?? null;
 
-  if (bearer) {
-    const claims = await verifyAccessJwt(bearer);
-    if (claims) {
-      userId = claims.sub;
-      email = claims.email;
-    }
-  } else if (process.env.DATABASE_URL && process.env.BETTER_AUTH_SECRET) {
+  if (!claims && process.env.DATABASE_URL && process.env.BETTER_AUTH_SECRET) {
     const session = await getAuth().api.getSession({ headers: req.headers });
     if (session?.user) {
       userId = session.user.id;
