@@ -10,6 +10,7 @@ import { APP_NAME } from "./copy";
 export type { AuthEmailKind };
 
 export function assertMailDelivered(result: {
+  data?: unknown;
   error?: unknown;
 }): void {
   if (result.error) {
