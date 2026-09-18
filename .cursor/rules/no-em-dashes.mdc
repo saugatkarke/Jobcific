@@ -1,0 +1,24 @@
+---
+description: Never use em dashes or en dashes in any generated or edited text
+alwaysApply: true
+---
+
+# No em dashes
+
+Never use em dashes (U+2014) or en dashes (U+2013) in files, comments, commit messages, PR text, docs, UI copy, or chat replies.
+
+Use a comma, colon, period, parentheses, or a normal hyphen instead.
+
+ASCII hyphen-minus (`-`) is allowed only in code, flags, kebab-case names, and numeric ranges such as `1-2`.
+
+Do not copy em dashes from models or templates. When you edit existing text that contains them, replace them.
+
+```text
+Bad: Jobcific [em dash] payment website
+Good: Jobcific: payment website
+```
+
+```text
+Bad: One plan, two extensions [em dash] Indeed and Seek
+Good: One plan, two extensions (Indeed and Seek)
+```
