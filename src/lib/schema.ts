@@ -1,4 +1,11 @@
-import { boolean, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  integer,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+} from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -95,4 +102,29 @@ export const extensionRefreshToken = pgTable("extension_refresh_token", {
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   revokedAt: timestamp("revoked_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+});
+
+export const atsUsage = pgTable(
+  "ats_cloud_usage",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    periodKey: text("period_key").notNull(),
+    periodEnd: timestamp("period_end", { withTimezone: true }).notNull(),
+    used: integer("used").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.userId, table.periodKey] }),
+  }),
+);
+
+export const atsScoreReservationUse = pgTable("ats_score_reservation_use", {
+  reservationId: text("reservation_id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  claimedAt: timestamp("claimed_at", { withTimezone: true }).notNull(),
 });

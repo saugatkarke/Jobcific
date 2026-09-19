@@ -6,8 +6,6 @@ import {
   PADDLE_HELP_EMAIL,
   PADDLE_MOR_STATEMENT,
   SUPPORT_EMAIL,
-  SUPPORT_PHONE,
-  SUPPORT_PHONE_TEL,
   sellerIdentity,
 } from "@/lib/legal";
 import { MONTHLY_LABEL, YEARLY_LABEL } from "@/lib/pricing";
@@ -120,8 +118,7 @@ export default function TermsPage() {
 
       <h2>10. Complaints</h2>
       <p>
-        Email <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> or call{" "}
-        <a href={`tel:${SUPPORT_PHONE_TEL}`}>{SUPPORT_PHONE}</a>. We aim to
+        Email <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>. We aim to
         acknowledge complaints within 2 business days and to give an outcome
         within 10 business days. If we cannot resolve it, Australian consumers may
         contact their state or territory fair trading office or the ACCC.
@@ -148,8 +145,6 @@ export default function TermsPage() {
         {sellerIdentity()}
         <br />
         Email: <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
-        <br />
-        Phone: <a href={`tel:${SUPPORT_PHONE_TEL}`}>{SUPPORT_PHONE}</a>
       </p>
     </LegalPage>
   );

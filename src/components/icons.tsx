@@ -344,3 +344,73 @@ export function IconShield({ className }: IconProps) {
     </svg>
   );
 }
+
+export function IconMail({ className }: IconProps) {
+  return (
+    <svg {...strokeProps(className)}>
+      <rect
+        x="3.5"
+        y="5.5"
+        width="17"
+        height="13"
+        rx="2"
+        stroke="currentColor"
+        strokeWidth="1.75"
+      />
+      <path
+        d="m4.5 8 7.5 5.2L19.5 8"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function IconAlertCircle({ className }: IconProps) {
+  return (
+    <svg {...strokeProps(className)}>
+      <circle
+        cx="12"
+        cy="12"
+        r="8.25"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+      <path
+        d="M12 8.2v4.4M12 16.2h.01"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+export function IconSpinner({ className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="8.25"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        opacity="0.25"
+      />
+      <path
+        d="M20.25 12a8.25 8.25 0 0 0-8.25-8.25"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}

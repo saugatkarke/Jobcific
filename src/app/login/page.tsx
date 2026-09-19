@@ -20,7 +20,7 @@ export default async function LoginPage({
           "One account covers both Indeed and Seek.",
           "Job data stays in the browser, not on this site.",
           "If this is your first login, verify your email from your inbox first.",
-          "Sign in from the extension popup after you create an account here.",
+          "After you sign in here, a small Chrome window finishes linking the extension.",
         ]}
       >
         <LoginForm nextPath={nextPath} />

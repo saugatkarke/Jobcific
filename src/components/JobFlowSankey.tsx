@@ -199,7 +199,7 @@ export function JobFlowSankey() {
         })}
       </svg>
 
-      <div className="relative z-10 grid h-full min-h-0 grid-cols-[minmax(0,1fr)_minmax(120px,1.2fr)_minmax(0,1fr)] gap-2 md:gap-3">
+      <div className="relative z-10 grid h-full min-h-0 grid-cols-[minmax(0,1.25fr)_minmax(2.5rem,0.45fr)_minmax(0,1fr)] gap-1.5 md:grid-cols-[minmax(0,1fr)_minmax(120px,1.2fr)_minmax(0,1fr)] md:gap-3">
         <section className="flex min-h-0 min-w-0 flex-col">
           <p className="shrink-0 text-[12px] font-medium md:text-[13px]">
             <span className="tabular-nums">{total}</span> Saved
@@ -222,7 +222,7 @@ export function JobFlowSankey() {
                 onMouseEnter={() => setHoverJob(job.id)}
                 onMouseLeave={() => setHoverJob(null)}
               >
-                <div className="flex min-w-0 flex-1 flex-col justify-center px-2 py-1.5 md:px-2.5">
+                <div className="flex min-w-0 flex-1 flex-col justify-center px-1.5 py-1.5 md:px-2.5">
                   <p className="truncate text-[11px] font-medium leading-tight md:text-xs">{job.title}</p>
                   {compact ? (
                     <p className="mt-0.5 text-[10px] text-[var(--muted)]">ATS {job.ats}</p>
@@ -277,21 +277,31 @@ export function JobFlowSankey() {
                   onMouseLeave={() => setHoverOutcome(null)}
                 >
                   <div
-                    className="h-full w-2.5 shrink-0 self-stretch md:w-3"
+                    className="h-full w-2 shrink-0 self-stretch md:w-3"
                     style={{ background: outcome.barColor }}
                   />
-                  <div className="flex min-w-0 flex-1 items-center justify-between gap-2 px-2 py-1.5 md:px-2.5">
+                  <div
+                    className={`flex min-w-0 flex-1 px-1.5 py-1.5 md:px-2.5 ${
+                      compact
+                        ? "flex-col justify-center gap-0.5"
+                        : "items-center justify-between gap-2"
+                    }`}
+                  >
                     <div className="min-w-0">
-                      <p className="truncate text-[11px] font-medium leading-tight md:text-xs">{outcome.title}</p>
+                      <p className="text-[11px] font-medium leading-tight md:text-xs">
+                        {outcome.title}
+                      </p>
                       {outcome.badge && !compact ? (
                         <span className="mt-1 inline-flex rounded-full bg-[#d9f7ff] px-1.5 py-0.5 text-[9px] font-medium text-[#0f6f86]">
                           {outcome.badge}
                         </span>
                       ) : null}
                     </div>
-                    <div className="shrink-0 text-right">
-                      <p className="text-[11px] font-medium tabular-nums md:text-xs">{count}</p>
-                      <p className="text-[9px] text-[var(--muted)]">Roles</p>
+                    <div className={compact ? "min-w-0" : "shrink-0 text-right"}>
+                      <p className="text-[11px] font-medium tabular-nums md:text-xs">
+                        {compact ? `${count} ${count === 1 ? "role" : "roles"}` : count}
+                      </p>
+                      {compact ? null : <p className="text-[9px] text-[var(--muted)]">Roles</p>}
                     </div>
                   </div>
                 </article>

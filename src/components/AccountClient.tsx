@@ -2,9 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { INDEED_CWS_URL, SEEK_CWS_URL } from "@/lib/cws";
+import {
+  EXTENSION_CONNECT_HREF,
+  JOB_BOARD_LINKS,
+} from "@/lib/portal-next-steps";
 import {
   IconCheckCircle,
-  IconDownload,
+  IconExternal,
   IconEyeOff,
   IconScan,
   IconUser,
@@ -41,7 +46,7 @@ export function AccountWelcome() {
       <span className="inline-block origin-[70%_80%] animate-[wave_1.5s_ease-in-out]">
         👋
       </span>
-      <p className="text-lg font-medium">
+      <p className="text-lg font-medium text-[var(--muted)]">
         Welcome back, {name || email || "…"}
       </p>
     </div>
@@ -56,77 +61,59 @@ export function AccountPlanCard({
   const { ent, notice, manageBilling, portalError } =
     useEntitlement(checkoutSuccess);
   const isPro = ent?.plan === "pro";
+  const status =
+    ent?.status && ent.status !== "none"
+      ? ent.status
+      : isPro
+        ? "active"
+        : "current";
 
   return (
-    <div
-      className={
-        isPro
-          ? "plan-card-pro rounded-xl p-6"
-          : "mesh-hero rounded-xl border border-[var(--line)] p-5"
-      }
-    >
-      <h3
-        className={
-          isPro
-            ? "text-sm font-medium text-white/60"
-            : "text-sm font-medium text-[var(--muted)]"
-        }
-      >
-        Your plan
-      </h3>
-      <div className="mt-3">
-        <div className="flex items-center gap-3">
-          <span
-            className={
-              isPro
-                ? "pill plan-card-pro-pill capitalize"
-                : "pill capitalize"
-            }
-          >
-            {ent?.plan || "free"}
+    <div>
+      <div className={isPro ? "plan-card-pro" : "plan-card-free"}>
+        <div className="plan-card-head">
+          <p className="plan-card-kicker">Jobcific access</p>
+          <span className="plan-card-status">
+            <span aria-hidden />
+            {status}
           </span>
-          {ent?.status && ent.status !== "none" ? (
-            <span
-              className={
-                isPro
-                  ? "text-sm text-white/50"
-                  : "text-sm text-[var(--muted)]"
-              }
-            >
-              {ent.status}
-            </span>
-          ) : null}
         </div>
-        {notice ? (
-          <p
-            className={
-              isPro
-                ? "mt-3 text-sm text-white/60"
-                : "mt-3 text-sm text-[var(--muted)]"
-            }
-          >
-            {notice}
-          </p>
-        ) : null}
-        <div className="mt-4 flex flex-wrap gap-3">
-          {isPro ? (
-            <button
-              type="button"
-              className="plan-card-pro-btn"
-              onClick={manageBilling}
-            >
-              Manage billing
-            </button>
-          ) : (
-            <Link href="/pricing" className="btn-primary">
-              Upgrade to Pro
-            </Link>
-          )}
+        <div className="plan-card-main">
+          <div className="plan-card-copy-group">
+            <p className="plan-card-title">
+              {isPro ? "Being PRO" : "Being Free"}
+            </p>
+            <p className="plan-card-copy">
+              {notice ||
+                (isPro
+                  ? `Pro is ${status} on this account.`
+                  : "Free tracking on Seek and Indeed.")}
+            </p>
+          </div>
+          <div className="plan-card-action">
+            {isPro ? (
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={manageBilling}
+              >
+                Manage billing
+              </button>
+            ) : (
+              <Link href="/pricing" className="btn-primary">
+                Upgrade to Pro
+              </Link>
+            )}
+          </div>
         </div>
-        {portalError ? (
-          <p className="mt-3 text-sm text-red-400">{portalError}</p>
-        ) : null}
+        <div className="plan-card-foot">
+          <strong>{isPro ? "PRO" : "FREE"}</strong>
+          <span>Seek + Indeed</span>
+        </div>
       </div>
+      {portalError ? (
+        <p className="mt-3 text-sm text-red-400">{portalError}</p>
+      ) : null}
     </div>
   );
 }
@@ -134,7 +121,7 @@ export function AccountPlanCard({
 function useEntitlement(checkoutSuccess: boolean) {
   const [ent, setEnt] = useState<Entitlement | null>(null);
   const [notice, setNotice] = useState(
-    checkoutSuccess ? "Payment received — Pro unlocks in a moment." : "",
+    checkoutSuccess ? "Payment received. Pro unlocks in a moment." : "",
   );
   const [portalError, setPortalError] = useState("");
 
@@ -171,19 +158,96 @@ function useEntitlement(checkoutSuccess: boolean) {
   return { ent, notice, portalError, manageBilling };
 }
 
+export function AccountExtensionCard() {
+  return (
+    <DashboardCard title="Chrome extension">
+      <p className="text-sm">
+        Connect this account so Pro status syncs into the Seek and Indeed
+        extensions.
+      </p>
+      <p className="mt-2 text-sm text-[var(--muted)]">
+        Chrome opens a small window to finish the link. Then reopen the
+        extension popup.
+      </p>
+      <div className="mt-4">
+        <Link href={EXTENSION_CONNECT_HREF} className="btn-primary">
+          Connect extension
+        </Link>
+      </div>
+      <p className="mt-5 text-sm text-[var(--muted)]">
+        Then search as usual on Seek Australia, Seek New Zealand, or Indeed.
+      </p>
+      <ul className="mt-3 space-y-2">
+        {JOB_BOARD_LINKS.map((board) => (
+          <li key={board.href}>
+            <a
+              href={board.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between rounded-2xl border border-[var(--line)] px-3 py-2.5 text-sm font-medium hover:bg-neutral-50"
+            >
+              {board.label}
+              <IconExternal className="h-3.5 w-3.5 text-[var(--muted)]" />
+            </a>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-4 text-sm text-[var(--muted)]">
+        Need the extension first?{" "}
+        <a
+          href={SEEK_CWS_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-medium text-black hover:underline"
+        >
+          Install Seek
+        </a>
+        {" · "}
+        <a
+          href={INDEED_CWS_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-medium text-black hover:underline"
+        >
+          Install Indeed
+        </a>
+      </p>
+    </DashboardCard>
+  );
+}
+
+export function AccountDetailsCard() {
+  const { email, signOut } = useSession();
+
+  return (
+    <DashboardCard title="Account">
+      <div className="flex items-center gap-3 text-sm">
+        <IconUser className="h-4 w-4 text-[var(--muted)]" />
+        <span>{email || "…"}</span>
+      </div>
+      <div className="mt-4 flex flex-wrap gap-3">
+        <button type="button" className="btn-secondary" onClick={signOut}>
+          Sign out
+        </button>
+      </div>
+    </DashboardCard>
+  );
+}
+
 export function AccountClient({
   checkoutSuccess,
 }: {
   checkoutSuccess: boolean;
 }) {
   const { ent } = useEntitlement(checkoutSuccess);
-  const { signOut } = useSession();
   const isPro = ent?.plan === "pro";
 
   return (
     <div className="space-y-8">
+      <AccountExtensionCard />
+
       {/* What you get */}
-      <DashboardCard title={isPro ? "Pro features" : "Free features"}>
+      <DashboardCard title={isPro ? "Core Features" : "Free features"}>
         <ul className="space-y-2.5">
           <li className="flex items-center gap-2.5 text-sm">
             <IconCheckCircle className="h-4 w-4 text-[var(--mint)]" />
@@ -215,39 +279,6 @@ export function AccountClient({
             Upgrade to unlock Hide jobs and ATS scores.
           </p>
         ) : null}
-      </DashboardCard>
-
-      {/* Extension connection */}
-      <DashboardCard title="Chrome extension">
-        <div className="flex items-start gap-3">
-          <IconDownload className="mt-0.5 h-5 w-5 text-[var(--muted)]" />
-          <div>
-            <p className="text-sm">
-              The Indeed and Seek extensions connect after you sign in from the
-              extension popup.
-            </p>
-            <p className="mt-2 text-sm text-[var(--muted)]">
-              Your account and Pro status sync automatically.
-            </p>
-          </div>
-        </div>
-      </DashboardCard>
-
-      {/* Account actions */}
-      <DashboardCard title="Account">
-        <div className="flex items-center gap-3 text-sm">
-          <IconUser className="h-4 w-4 text-[var(--muted)]" />
-          <span>{ent?.email || "…"}</span>
-        </div>
-        <div className="mt-4 flex flex-wrap gap-3">
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={signOut}
-          >
-            Sign out
-          </button>
-        </div>
       </DashboardCard>
     </div>
   );

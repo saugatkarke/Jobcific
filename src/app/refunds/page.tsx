@@ -7,8 +7,6 @@ import {
   PADDLE_MOR_STATEMENT,
   REFUND_FIRST_PAYMENT_DAYS,
   SUPPORT_EMAIL,
-  SUPPORT_PHONE,
-  SUPPORT_PHONE_TEL,
   sellerIdentity,
 } from "@/lib/legal";
 
@@ -26,7 +24,7 @@ export default function RefundsPage() {
         {PADDLE_MOR_STATEMENT}
       </p>
 
-      <h2>1. First payment — 30-day money-back</h2>
+      <h2>1. First payment: 30-day money-back</h2>
       <p>
         If you are not satisfied with Pro, we will refund your first Pro payment
         in full if you ask within {REFUND_FIRST_PAYMENT_DAYS} days of that
@@ -48,10 +46,8 @@ export default function RefundsPage() {
       <ul>
         <li>
           Email us at <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>{" "}
-          from the address on your account, or call{" "}
-          <a href={`tel:${SUPPORT_PHONE_TEL}`}>{SUPPORT_PHONE}</a>, with your
-          order email and approximate payment date. We will arrange the refund
-          with Paddle.
+          from the address on your account, with your order email and
+          approximate payment date. We will arrange the refund with Paddle.
         </li>
         <li>
           Go to{" "}
@@ -108,8 +104,6 @@ export default function RefundsPage() {
         {sellerIdentity()}
         <br />
         Email: <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
-        <br />
-        Phone: <a href={`tel:${SUPPORT_PHONE_TEL}`}>{SUPPORT_PHONE}</a>
       </p>
     </LegalPage>
   );

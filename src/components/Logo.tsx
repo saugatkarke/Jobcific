@@ -2,7 +2,7 @@ import Image from "next/image";
 import { APP_NAME } from "@/lib/copy";
 
 export function Logo({
-  className = "h-8 w-auto",
+  className = "h-16 w-auto",
   priority = false,
 }: {
   className?: string;
@@ -10,12 +10,13 @@ export function Logo({
 }) {
   return (
     <Image
-      src="/Jobcific-logo.png"
+      src="/Jobcific-logo-transparent.svg"
       alt={APP_NAME}
-      width={879}
-      height={219}
+      width={1077}
+      height={453}
       className={`object-contain ${className}`}
       priority={priority}
+      unoptimized
     />
   );
 }
