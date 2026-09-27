@@ -7,6 +7,13 @@ describe("better-auth schema compatibility", () => {
     const columns = getTableColumns(schema.account);
     expect(columns.issuer).toBeDefined();
   });
+
+  it("queues one analytics event when an email becomes verified", () => {
+    const columns = getTableColumns(schema.user);
+    expect(columns.verifiedEventPending).toBeDefined();
+    expect(columns.verifiedEventPending.notNull).toBe(true);
+    expect(columns.verifiedEventPending.hasDefault).toBe(true);
+  });
 });
 
 describe("ATS usage schema", () => {
