@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { GridBand } from "./PageGrid";
-import { IconLogout, IconStar, IconUser } from "./icons";
-import { PendingNavButton } from "./BusyButton";
+import { IconLogout, IconStar } from "./icons";
+import { BtnSpinner, PendingLink } from "./BusyButton";
 import { Logo } from "./Logo";
 import { useSession } from "./SessionProvider";
+import { Skeleton, SkeletonBlock } from "./Skeleton";
+import { UserAvatar } from "./UserAvatar";
 import { APP_NAME } from "@/lib/copy";
 
 function HeaderRating() {
@@ -34,8 +36,25 @@ function HeaderRating() {
   );
 }
 
+function HeaderSessionSkeleton() {
+  return (
+    <>
+      <span className="sr-only" role="status">
+        Loading account
+      </span>
+      <span className="flex min-w-0 items-center gap-2">
+        <SkeletonBlock className="h-9 w-9 shrink-0 rounded-full" />
+        <Skeleton>Your name</Skeleton>
+      </span>
+      <span className="flex shrink-0 items-center p-1">
+        <SkeletonBlock className="h-6 w-6 shrink-0" />
+      </span>
+    </>
+  );
+}
+
 export function SiteHeader() {
-  const { email, name, signOut } = useSession();
+  const { email, name, avatar, loading, signingOut, signOut } = useSession();
 
   return (
     <GridBand
@@ -72,42 +91,58 @@ export function SiteHeader() {
         </nav>
       </div>
       <div className="col-span-8 flex h-20 items-center justify-end gap-2 px-3 text-sm md:col-span-5 md:gap-3 md:px-4">
-        {email ? (
+        {loading ? (
+          <HeaderSessionSkeleton />
+        ) : email ? (
           <>
             <Link
               href="/account"
               aria-label={name ? `${name}, account` : "Account"}
-              className="flex min-w-0 items-center gap-1.5 text-neutral-700 transition-colors duration-200 hover:text-black"
+              className="flex min-w-0 items-center gap-2 text-neutral-700 transition-colors duration-200 hover:text-black"
             >
-              <IconUser className="h-4 w-4 shrink-0" />
-              <span className="hidden truncate md:inline">
+              <UserAvatar
+                src={avatar}
+                size={36}
+                motion="hover"
+                framed={false}
+              />
+              <span className="max-w-[8rem] truncate md:max-w-[14rem]">
                 {name || "Account"}
               </span>
             </Link>
             <button
               type="button"
               onClick={signOut}
-              className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-neutral-700 transition-colors duration-200 hover:text-black"
+              disabled={signingOut}
+              aria-busy={signingOut || undefined}
+              aria-label="Sign out"
+              title="Sign out"
+              className="flex shrink-0 items-center p-1 text-red-800 transition-colors duration-200 hover:text-red-950"
             >
-              <IconLogout className="h-4 w-4 shrink-0" />
-              Sign out
+              {signingOut ? (
+                <BtnSpinner size="1.5rem" />
+              ) : (
+                <IconLogout className="h-6 w-6 shrink-0" />
+              )}
             </button>
           </>
         ) : (
           <>
             <HeaderRating />
-            <PendingNavButton
+            <PendingLink
               href="/login"
-              className="inline-flex items-center gap-1.5 border-0 bg-transparent p-0 font-[inherit] text-sm text-neutral-700 transition-colors duration-200 hover:text-black disabled:opacity-100"
+              pendingLabel="Logging in..."
+              className="inline-flex items-center gap-1.5 text-sm text-neutral-700 transition-colors duration-200 hover:text-black"
             >
               Login
-            </PendingNavButton>
-            <PendingNavButton
+            </PendingLink>
+            <PendingLink
               href="/signup"
+              pendingLabel="Getting started..."
               className="btn-primary whitespace-nowrap px-3 py-2 text-xs md:px-4 md:py-2.5 md:text-sm"
             >
               Get started
-            </PendingNavButton>
+            </PendingLink>
           </>
         )}
       </div>

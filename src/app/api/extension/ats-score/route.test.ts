@@ -67,6 +67,15 @@ function modelResult() {
     score: 82,
     summary: "Strong match.",
     tips: ["Quantify achievements"],
+    sections: {
+      overview: "Strong match.",
+      strengths: [],
+      gaps: [],
+      missingKeywords: [],
+      contactIssues: [],
+      formatting: [],
+      improvements: ["Quantify achievements"],
+    },
     dimensions: {
       keywords: 88,
       experience: 80,

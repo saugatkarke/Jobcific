@@ -97,7 +97,7 @@ describe("pro pricing CTA", () => {
     expect(canStartCheckout("yearly", "monthly")).toBe(false);
   });
 
-  it("shows Starting when checkout is pending", () => {
+  it("shows Subscribing when checkout is pending", () => {
     expect(
       pricingProCta({
         subscribedInterval: null,
@@ -105,7 +105,7 @@ describe("pro pricing CTA", () => {
         pending: true,
       }),
     ).toEqual({
-      label: "Starting…",
+      label: "Subscribing...",
       disabled: true,
       showLegal: true,
     });

@@ -29,6 +29,18 @@ function jsonResponse(status: number, body: unknown): JsonResponse {
   };
 }
 
+function sectionFields() {
+  return {
+    overview: "Your resume shows a solid base for this role.",
+    strengths: ["You show strong React delivery."],
+    gaps: ["You do not show AWS experience."],
+    missingKeywords: ["Terraform", "CI/CD"],
+    contactIssues: ["Your phone number is missing."],
+    formatting: [] as string[],
+    improvements: ["Add a bullet on cloud deployments."],
+  };
+}
+
 function okAtsResponse(score = 64) {
   return jsonResponse(200, {
     modelVersion: "gemini-3.1-flash-lite",
@@ -39,8 +51,7 @@ function okAtsResponse(score = 64) {
             {
               text: JSON.stringify({
                 score,
-                summary: "Solid base alignment.",
-                tips: ["Mirror more role-specific keywords"],
+                ...sectionFields(),
                 dimensions: {
                   keywords: 61,
                   experience: 67,
@@ -118,8 +129,13 @@ describe("buildGeminiRequest", () => {
     expect(body.generationConfig.maxOutputTokens).toBe(1024);
     expect(body.generationConfig.responseJsonSchema.required).toEqual([
       "score",
-      "summary",
-      "tips",
+      "overview",
+      "strengths",
+      "gaps",
+      "missingKeywords",
+      "contactIssues",
+      "formatting",
+      "improvements",
       "dimensions",
     ]);
     expect(
@@ -132,16 +148,34 @@ describe("buildGeminiRequest", () => {
       "qualifications",
       "roleFit",
     ]);
-    expect(body.systemInstruction.parts[0].text).toMatch(
-      /six dimension scores 0-100/i,
-    );
-    expect(body.systemInstruction.parts[0].text).toMatch(/1-5 actionable tips/i);
+    const system = body.systemInstruction.parts[0].text as string;
+    expect(system).toMatch(/six dimension scores 0-100/i);
+    expect(system).toMatch(/second person/i);
+    expect(system).toMatch(/starting with "Your resume"/);
+    expect(system).toMatch(/Never mention the person's name/);
+    expect(system).not.toMatch(/Seek|Australia|Indeed/);
     expect(prompt).toContain("=== JOB DESCRIPTION ===");
     expect(prompt).toContain("=== RESUME ===");
     expect(prompt).toContain("J".repeat(20000));
     expect(prompt).toContain("R".repeat(40000));
     expect(prompt).not.toContain("TRUNCATE_JOB");
     expect(prompt).not.toContain("TRUNCATE_RESUME");
+  });
+
+  it("masks contact details before they reach Gemini", () => {
+    process.env.GEMINI_API_KEY = "test-key";
+    const request = buildGeminiRequest({
+      resumeText:
+        "Jane Doe\njane@example.com\n0412 345 678\nlinkedin.com/in/jane",
+      jobText: "Backend role",
+    });
+    const prompt = JSON.parse(String(request.init.body)).contents[0].parts[0]
+      .text as string;
+    expect(prompt).not.toContain("jane@example.com");
+    expect(prompt).not.toContain("0412 345 678");
+    expect(prompt).toContain("[email provided]");
+    expect(prompt).toContain("[phone provided]");
+    expect(prompt).toContain("[LinkedIn provided]");
   });
 });
 
@@ -156,8 +190,7 @@ describe("parseGeminiResponse", () => {
               {
                 text: JSON.stringify({
                   score: 81.6,
-                  summary: "Strong match with the role requirements.",
-                  tips: ["Add more quantified achievements"],
+                  ...sectionFields(),
                   dimensions: {
                     keywords: 88,
                     experience: 80,
@@ -181,8 +214,9 @@ describe("parseGeminiResponse", () => {
 
     expect(result).toEqual({
       score: 82,
-      summary: "Strong match with the role requirements.",
-      tips: ["Add more quantified achievements"],
+      summary: "Your resume shows a solid base for this role.",
+      tips: ["Add a bullet on cloud deployments."],
+      sections: sectionFields(),
       dimensions: {
         keywords: 88,
         experience: 80,
@@ -228,8 +262,7 @@ describe("parseGeminiResponse", () => {
   function validPayload(overrides: Record<string, unknown> = {}) {
     return {
       score: 70,
-      summary: "Reasonable match.",
-      tips: ["Add measurable outcomes"],
+      ...sectionFields(),
       dimensions: {
         keywords: 70,
         experience: 70,
@@ -340,6 +373,53 @@ describe("parseGeminiResponse", () => {
     );
 
     expect(result.score).toBe(83);
+  });
+
+  it.each(["", "   ", null, 42])("rejects %s as an overview", (value) => {
+    expect(() =>
+      parseGeminiResponse(
+        responseWithPayload(validPayload({ overview: value })),
+      ),
+    ).toThrowError("MODEL_RESPONSE_INVALID");
+  });
+
+  it("rejects a response with no improvements", () => {
+    expect(() =>
+      parseGeminiResponse(
+        responseWithPayload(validPayload({ improvements: [] })),
+      ),
+    ).toThrowError("MODEL_RESPONSE_INVALID");
+  });
+
+  it("treats missing optional lists as empty and truncates long lists", () => {
+    const result = parseGeminiResponse(
+      responseWithPayload(
+        validPayload({
+          strengths: undefined,
+          missingKeywords: ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
+          improvements: ["one", "two", "three", "four"],
+        }),
+      ),
+    );
+    expect(result.sections.strengths).toEqual([]);
+    expect(result.sections.missingKeywords).toHaveLength(8);
+    expect(result.sections.improvements).toEqual(["one", "two", "three"]);
+    expect(result.tips).toEqual(["one", "two", "three"]);
+  });
+
+  it("rejects a list that is not an array", () => {
+    expect(() =>
+      parseGeminiResponse(responseWithPayload(validPayload({ gaps: "none" }))),
+    ).toThrowError("MODEL_RESPONSE_INVALID");
+  });
+
+  it("scrubs leaked contact details from feedback", () => {
+    const result = parseGeminiResponse(
+      responseWithPayload(
+        validPayload({ gaps: ["Email jane@example.com is fine."] }),
+      ),
+    );
+    expect(result.sections.gaps).toEqual(["Email is fine."]);
   });
 });
 

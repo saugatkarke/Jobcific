@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { getPaddle } from "@/lib/paddle";
+import { findOrCreatePaddleCustomer } from "@/lib/paddle-customer";
 import {
   canStartCheckout,
   intervalFromPriceId,
@@ -40,11 +41,10 @@ export async function POST(req: NextRequest) {
   let customerId = rows[0]?.paddleCustomerId || "";
   const paddle = getPaddle();
   if (!customerId) {
-    const customer = await paddle.customers.create({
+    customerId = await findOrCreatePaddleCustomer(paddle.customers, {
       email: session.user.email,
-      customData: { userId: session.user.id },
+      userId: session.user.id,
     });
-    customerId = customer.id;
     await getDb()
       .update(user)
       .set({ paddleCustomerId: customerId })

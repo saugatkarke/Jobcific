@@ -485,46 +485,75 @@ body {
   }
 }
 
-/* Branded plan access panel */
+/* Branded plan access panel: dark glass lit from below by a brand glow */
 .plan-card-pro,
 .plan-card-free {
   position: relative;
   isolation: isolate;
   overflow: hidden;
   width: 100%;
-  padding: 1.35rem;
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  padding: 1.75rem 1.5rem 3.5rem;
   border-radius: 24px;
-  color: #0b120f;
-  backdrop-filter: blur(16px) saturate(1.2);
-  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  color: #fff;
+  background: linear-gradient(180deg, #030604 0%, #06100b 50%, #0a1811 100%);
 }
 
 .plan-card-pro {
-  background:
-    radial-gradient(
-      90% 110% at 100% 0%,
-      rgba(253, 184, 51, 0.22),
-      transparent 55%
-    ),
-    radial-gradient(
-      70% 90% at 0% 100%,
-      rgba(32, 252, 143, 0.2),
-      transparent 58%
-    ),
-    rgba(247, 250, 248, 0.86);
+  --plan-glow-a: rgba(32, 252, 143, 1);
+  --plan-glow-b: rgba(255, 196, 64, 1);
+  --plan-glow-opacity: 0.85;
+  --plan-glow-hover-opacity: 0.95;
 }
 
 .plan-card-free {
-  background: linear-gradient(
-      135deg,
-      rgba(32, 252, 143, 0.1) 0%,
-      rgba(255, 255, 255, 0.82) 50%,
-      rgba(253, 184, 51, 0.1) 100%
-    ),
-    rgba(248, 250, 249, 0.88);
+  padding-bottom: 1.75rem;
+  background: linear-gradient(180deg, #202322 0%, #181a19 100%);
 }
 
+.plan-card-stack > :first-child {
+  z-index: 1;
+}
+
+/* The tray tucks its top under the card's rounded bottom corners. */
+.plan-card-tray {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: -24px 1.25rem 0;
+  padding: calc(24px + 0.35rem) 1rem 0.4rem;
+  border-radius: 0 0 16px 16px;
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: #03130a;
+  background: #eef1ef;
+}
+
+.plan-card-stack-pro .plan-card-tray {
+  background:
+    radial-gradient(
+      45% 160% at 14% 100%,
+      rgba(255, 255, 255, 0.6),
+      transparent 70%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--plan-tray-color, var(--mint)) 55%, #fff) 0%,
+      color-mix(in srgb, var(--plan-tray-color, var(--mint)) 85%, #fff) 100%
+    );
+}
+
+/* Hidden trays keep their space so the vertically centered column never jumps. */
+@media (hover: hover) and (pointer: fine) {
+  .plan-card-tray {
+    transform: translateY(-100%);
+    transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .plan-card-stack:is(:hover, :focus-within) .plan-card-tray {
+    transform: translateY(0);
+  }
+}
 .plan-card-pro::before,
 .plan-card-free::before {
   content: "";
@@ -535,11 +564,11 @@ body {
   border-radius: inherit;
   pointer-events: none;
   background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.98) 0%,
-    rgba(255, 255, 255, 0.28) 30%,
-    rgba(253, 184, 51, 0.38) 62%,
-    rgba(32, 252, 143, 0.42) 100%
+    180deg,
+    rgba(255, 255, 255, 0.32) 0%,
+    rgba(255, 255, 255, 0.06) 40%,
+    rgba(255, 255, 255, 0.18) 75%,
+    rgba(255, 255, 255, 0.75) 100%
   );
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
@@ -551,77 +580,333 @@ body {
   mask-composite: exclude;
 }
 
-.plan-card-pro::after {
-  content: "";
+/* Wave layers keep their colors fixed and slide a curved mask sideways, so crests
+   travel along the card while mint stays left and gold stays right. */
+.plan-aurora {
+  --plan-wave-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 100' preserveAspectRatio='none'%3E%3Cpath d='M0 45C20 45 30 10 55 10S90 50 110 50S140 28 160 28S200 62 225 62S270 45 300 45V100H0Z'/%3E%3C/svg%3E");
+  --plan-wave-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 100' preserveAspectRatio='none'%3E%3Cpath d='M0 35C25 35 35 22 60 22S100 55 125 55S160 5 190 5S250 50 270 45S290 35 300 35V100H0Z'/%3E%3C/svg%3E");
+  --plan-wave-c: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 100' preserveAspectRatio='none'%3E%3Cpath d='M0 50C30 50 45 18 75 18S120 40 140 40S170 30 185 30S230 60 260 58S290 50 300 50V100H0Z'/%3E%3C/svg%3E");
   position: absolute;
-  left: -56%;
-  bottom: 0;
+  inset: 0;
   z-index: 0;
-  width: 112%;
-  height: 130%;
+  overflow: hidden;
   pointer-events: none;
-  background-image: url("/jobcific-plan-ribbons.svg");
-  background-position: center bottom;
-  background-repeat: no-repeat;
-  background-size: 100% auto;
-  opacity: 0.46;
-  transform: rotate(45deg);
-  transform-origin: 50% 100%;
+  border-radius: inherit;
+  background: radial-gradient(
+    55% 24% at 50% 100%,
+    rgba(255, 255, 255, 0.9),
+    transparent 75%
+  );
+  filter: blur(10px) saturate(1.25);
+  opacity: var(--plan-glow-opacity);
+  transition:
+    opacity 0.6s ease,
+    filter 0.6s ease;
 }
 
-.plan-card-pro > *,
-.plan-card-free > * {
+.plan-aurora-wave {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  bottom: -12%;
+  transform-origin: 50% 100%;
+  -webkit-mask-repeat: repeat-x;
+  mask-repeat: repeat-x;
+  transition: scale 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.plan-aurora-wave-1 {
+  height: 96%;
+  background:
+    radial-gradient(40% 120% at 16% 100%, var(--plan-glow-a), transparent 85%),
+    radial-gradient(40% 120% at 86% 100%, var(--plan-glow-b), transparent 85%),
+    linear-gradient(to top, rgba(255, 255, 255, 0.55), transparent 90%);
+  -webkit-mask-image: var(--plan-wave-a);
+  mask-image: var(--plan-wave-a);
+  -webkit-mask-size: 50% 100%;
+  mask-size: 50% 100%;
+  animation:
+    plan-wave-half 11s linear infinite,
+    plan-wave-bob 6s ease-in-out infinite alternate;
+}
+
+.plan-aurora-wave-2 {
+  height: 112%;
+  opacity: 0.5;
+  background:
+    radial-gradient(30% 110% at 30% 100%, var(--plan-glow-a), transparent 85%),
+    radial-gradient(34% 110% at 70% 100%, rgba(255, 255, 255, 0.9), transparent 85%),
+    radial-gradient(30% 110% at 95% 100%, var(--plan-glow-b), transparent 85%);
+  -webkit-mask-image: var(--plan-wave-b);
+  mask-image: var(--plan-wave-b);
+  -webkit-mask-size: 66.667% 100%;
+  mask-size: 66.667% 100%;
+  animation:
+    plan-wave-two-thirds 19s linear infinite,
+    plan-wave-bob 8s ease-in-out -3s infinite alternate;
+}
+
+.plan-aurora-wave-3 {
+  height: 62%;
+  background:
+    radial-gradient(40% 120% at 50% 100%, rgba(255, 255, 255, 1), transparent 70%),
+    radial-gradient(30% 110% at 10% 100%, var(--plan-glow-a), transparent 70%),
+    radial-gradient(30% 110% at 92% 100%, var(--plan-glow-b), transparent 70%);
+  -webkit-mask-image: var(--plan-wave-c);
+  mask-image: var(--plan-wave-c);
+  -webkit-mask-size: 33.333% 100%;
+  mask-size: 33.333% 100%;
+  animation:
+    plan-wave-third 8s linear infinite,
+    plan-wave-bob 5s ease-in-out -1.5s infinite alternate;
+}
+
+/* With a tile of width w, moving mask-position by w / (1 - w) shifts exactly one wavelength. */
+@keyframes plan-wave-half {
+  from {
+    -webkit-mask-position: 0% 100%;
+    mask-position: 0% 100%;
+  }
+  to {
+    -webkit-mask-position: 100% 100%;
+    mask-position: 100% 100%;
+  }
+}
+
+@keyframes plan-wave-third {
+  from {
+    -webkit-mask-position: 0% 100%;
+    mask-position: 0% 100%;
+  }
+  to {
+    -webkit-mask-position: 50% 100%;
+    mask-position: 50% 100%;
+  }
+}
+
+@keyframes plan-wave-two-thirds {
+  from {
+    -webkit-mask-position: 0% 100%;
+    mask-position: 0% 100%;
+  }
+  to {
+    -webkit-mask-position: 200% 100%;
+    mask-position: 200% 100%;
+  }
+}
+
+@keyframes plan-wave-bob {
+  from {
+    transform: translateY(4%) scaleY(0.92);
+  }
+  to {
+    transform: translateY(-6%) scaleY(1.08);
+  }
+}
+
+@media (hover: hover) {
+  .plan-card-pro:hover .plan-aurora {
+    opacity: var(--plan-glow-hover-opacity);
+    filter: blur(10px) saturate(1.25) brightness(1.06);
+  }
+
+  .plan-card-pro:hover .plan-aurora-wave {
+    scale: 1 1.06;
+  }
+}
+
+.plan-card-pro .btn-secondary {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.plan-card-pro .btn-secondary:hover {
+  border-color: rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.plan-card-free .btn-primary {
+  background: var(--mint);
+  color: #03130a;
+}
+
+.plan-card-free .btn-primary:hover {
+  background: #6dfdb5;
+}
+
+.plan-card-pro > :not(.plan-aurora),
+.plan-card-free > :not(.plan-aurora) {
   position: relative;
   z-index: 1;
 }
 
 .plan-card-head {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: space-between;
   gap: 1rem;
 }
 
-.plan-card-kicker {
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: rgba(11, 18, 15, 0.55);
+.plan-card-avatar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+}
+
+.plan-card-avatar-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 0.66rem;
+  font-weight: 500;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.78);
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.plan-card-avatar-edit:hover,
+.plan-card-avatar-edit[aria-expanded="true"] {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.plan-card-avatar-edit[data-locked] {
+  max-width: 5.5rem;
+  border-radius: 10px;
+  text-align: center;
+  white-space: normal;
+  line-height: 1.25;
+  color: var(--gold);
+}
+
+.plan-card-email-row {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.plan-card-signout {
+  display: inline-flex;
+  flex-shrink: 0;
+  margin-left: 0.2rem;
+  padding: 0.3rem;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 8px;
+  background: rgba(250, 247, 240, 0.64);
+  color: #ef4444;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    opacity 0.2s ease;
+}
+
+.plan-card-signout:hover {
+  background: #fff;
+  color: #dc2626;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .plan-card-signout {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  :is(.plan-card-pro, .plan-card-free):is(:hover, :focus-within) .plan-card-signout {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+.plan-card-avatar-edit:focus-visible,
+.plan-card-signout:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.85);
+  outline-offset: 2px;
+}
+
+.plan-card-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-shrink: 0;
+  gap: 1rem;
+}
+
+.plan-card-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-width: 0;
+}
+
+.plan-card-name,
+.plan-card-email {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plan-card-name {
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.plan-card-email {
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .plan-card-status {
   display: inline-flex;
   align-items: center;
+  flex-shrink: 0;
   gap: 0.4rem;
   font-size: 0.72rem;
   font-weight: 600;
+  white-space: nowrap;
   text-transform: capitalize;
-  color: rgba(11, 18, 15, 0.62);
+  color: rgba(255, 255, 255, 0.78);
 }
 
-.plan-card-status > span {
-  width: 0.45rem;
-  height: 0.45rem;
+.plan-card-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex-shrink: 0;
   border-radius: 999px;
-  background: #11b86b;
+  background: var(--mint);
 }
 
-.plan-card-main {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
-  gap: 1rem;
-  margin-top: 0.75rem;
+.plan-card-bloom {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex-shrink: 0;
+  animation: plan-bloom-spin 9s linear infinite;
 }
 
-.plan-card-copy-group {
-  min-width: 0;
+@keyframes plan-bloom-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .plan-card-title {
-  max-width: 16rem;
-  font-size: clamp(1.65rem, 4vw, 2.25rem);
+  margin-bottom: 0.4rem;
+  font-size: clamp(1.5rem, 3.6vw, 2rem);
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.05em;
@@ -629,34 +914,13 @@ body {
 
 .plan-card-copy {
   max-width: 17rem;
-  margin-top: 0.65rem;
+  margin-top: 0.9rem;
   font-size: 0.88rem;
   line-height: 1.45;
-  color: rgba(11, 18, 15, 0.64);
+  color: rgba(255, 255, 255, 0.72);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.45);
 }
 
-.plan-card-action {
-  justify-self: end;
-}
-
-.plan-card-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-top: 1.5rem;
-  padding-top: 0.8rem;
-  border-top: 1px solid rgba(11, 18, 15, 0.1);
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(11, 18, 15, 0.5);
-}
-
-.plan-card-foot strong {
-  color: #0b120f;
-  letter-spacing: 0.15em;
-}
 
 .mesh-cta {
   background:
@@ -688,7 +952,6 @@ body {
 .btn-secondary {
   @apply inline-flex items-center justify-center rounded-[50px] border border-black/15 bg-white px-4 py-2.5 text-sm font-medium text-black hover:bg-neutral-50;
 }
-
 .btn-primary,
 .btn-secondary {
   transition:
@@ -715,6 +978,62 @@ button[aria-busy="true"] {
   cursor: wait;
 }
 
+a[aria-busy="true"] {
+  cursor: wait;
+  pointer-events: none;
+}
+
+[aria-busy="true"]:has(> .btn-spinner) {
+  gap: 0.5rem;
+}
+
+/* Placeholder copy keeps the loaded text's box, so data arriving never shifts layout.
+   Inline text paints only its glyph height; blocks (icons, buttons) fill their box. */
+@layer components {
+  .skeleton {
+    border-color: transparent !important;
+    border-radius: 0 !important;
+    background: linear-gradient(
+        100deg,
+        rgba(11, 18, 15, 0.08) 35%,
+        rgba(11, 18, 15, 0.025) 50%,
+        rgba(11, 18, 15, 0.08) 65%
+      )
+      0 0 / 300% 100% !important;
+    box-shadow: none !important;
+    color: transparent !important;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+    user-select: none;
+    pointer-events: none;
+    animation: skeleton-shimmer 1.4s ease-in-out infinite;
+  }
+
+  .skeleton-block {
+    display: inline-block;
+    vertical-align: middle;
+  }
+
+  .plan-card-free .skeleton {
+    background: linear-gradient(
+        100deg,
+        rgba(255, 255, 255, 0.16) 35%,
+        rgba(255, 255, 255, 0.06) 50%,
+        rgba(255, 255, 255, 0.16) 65%
+      )
+      0 0 / 300% 100% !important;
+  }
+}
+
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
 @keyframes btn-spin {
   to {
     transform: rotate(360deg);
@@ -722,16 +1041,43 @@ button[aria-busy="true"] {
 }
 
 .btn-spinner {
-  box-sizing: border-box;
   display: inline-block;
-  width: 1.125rem;
-  height: 1.125rem;
+  width: 1.25rem;
+  height: 1.25rem;
   flex-shrink: 0;
-  border: 2px solid currentColor;
-  border-right-color: transparent;
-  border-radius: 50%;
+  overflow: visible;
   transform-origin: center;
-  animation: btn-spin 0.6s linear infinite;
+  animation:
+    btn-spin 1s linear infinite,
+    btn-spinner-glow 2.3s ease-in-out infinite;
+}
+
+.btn-spinner-tick {
+  opacity: var(--tick-opacity);
+  animation: btn-spinner-shimmer 1.6s linear infinite;
+}
+
+@keyframes btn-spinner-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.35))
+      drop-shadow(0 0 2px rgba(255, 255, 255, 0.15));
+  }
+  50% {
+    filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.95))
+      drop-shadow(0 0 6px rgba(255, 255, 255, 0.6));
+  }
+}
+
+@keyframes btn-spinner-shimmer {
+  0%,
+  30%,
+  100% {
+    opacity: var(--tick-opacity);
+  }
+  12% {
+    opacity: 1;
+  }
 }
 
 .hero-install {
@@ -1203,6 +1549,114 @@ button[aria-busy="true"] {
   }
   100% {
     transform: rotate(0deg);
+  }
+}
+
+/* Gaze avatars: .dbga-* are hook classes inside DiceBear's Gaze SVG. */
+.user-avatar-svg,
+.user-avatar-svg > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.user-avatar-svg .dbga-eye,
+.user-avatar-svg .dbga-look {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.user-avatar-svg .dbga-hop {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+
+.avatar-motion-once .dbga-look,
+:hover > .avatar-motion-hover .dbga-look {
+  animation: avatar-look 2.6s ease-in-out;
+}
+
+.avatar-motion-once .dbga-eye,
+:hover > .avatar-motion-hover .dbga-eye {
+  animation: avatar-blink 2.6s linear;
+}
+
+.avatar-motion-once .dbga-hop,
+:hover > .avatar-motion-hover .dbga-hop {
+  animation: avatar-hop 2.6s ease-out;
+}
+
+.avatar-motion-once :is(.dbga-look, .dbga-eye, .dbga-hop) {
+  animation-delay: var(--avatar-delay, 0s);
+}
+
+:hover > .avatar-motion-hover .dbga-look,
+:hover > .avatar-motion-hover .dbga-eye,
+:hover > .avatar-motion-hover .dbga-hop {
+  animation-iteration-count: infinite;
+}
+
+/* Negative delays skip each loop's idle lead-in (hop 70%, look 8%, blink 30%) so hover reacts at once. */
+:hover > .avatar-motion-hover .dbga-hop {
+  animation-delay: -1.82s;
+}
+
+:hover > .avatar-motion-hover .dbga-look {
+  animation-delay: -0.21s;
+}
+
+:hover > .avatar-motion-hover .dbga-eye {
+  animation-delay: -0.78s;
+}
+
+@keyframes avatar-look {
+  0%,
+  8% {
+    transform: translate(0, 0);
+  }
+  20%,
+  34% {
+    transform: translate(-3.6px, 0.9px);
+  }
+  48%,
+  62% {
+    transform: translate(3.4px, -0.7px);
+  }
+  76%,
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes avatar-blink {
+  0%,
+  38%,
+  44%,
+  100% {
+    transform: scaleY(1);
+  }
+  41% {
+    transform: scaleY(0.06);
+  }
+}
+
+@keyframes avatar-hop {
+  0%,
+  70%,
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+  76% {
+    transform: translateY(0) scale(1.06, 0.94);
+  }
+  84% {
+    transform: translateY(-4px) scale(0.96, 1.05);
+  }
+  92% {
+    transform: translateY(0) scale(1.05, 0.95);
+  }
+  97% {
+    transform: translateY(0) scale(0.99, 1.01);
   }
 }
 
@@ -1918,14 +2372,6 @@ button[aria-busy="true"] {
   }
 }
 
-.pricing-card-rule {
-  align-self: stretch;
-  width: calc(100% + 40px);
-  height: 0;
-  margin: 16px -20px 0;
-  border-top: 1px solid var(--line);
-}
-
 .pricing-card-tagline {
   margin-top: 12px;
   margin-bottom: 12px;
@@ -1980,6 +2426,10 @@ button[aria-busy="true"] {
 .pricing-card-cta:disabled {
   cursor: wait;
   opacity: 0.72;
+}
+
+.pricing-card-cta:disabled[aria-busy="true"] {
+  opacity: 1;
 }
 
 .pricing-card-cta.is-subscribed:disabled {
@@ -2078,12 +2528,169 @@ button[aria-busy="true"] {
   color: var(--ink);
 }
 
-.pricing-card-check {
+.pricing-card-features > li.pricing-included {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+}
+
+.pricing-included-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pricing-included-toggle > span {
+  flex: 1;
+  font-weight: 400;
+}
+
+.pricing-included-toggle.is-open > span {
+  font-weight: 700;
+}
+
+.pricing-included-toggle:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.pricing-included-chevron {
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  flex-shrink: 0;
+  color: var(--muted);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pricing-included-toggle.is-open .pricing-included-chevron {
+  transform: rotate(180deg);
+}
+
+.pricing-included-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pricing-included-panel.is-open {
+  grid-template-rows: 1fr;
+}
+
+.pricing-included-clip {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.pricing-included-list {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  margin: 0 0 2px 9px;
+  padding: 8px 0 0;
+  list-style: none;
+  opacity: 0;
+  transition: opacity 0.28s ease;
+}
+
+.pricing-included-panel.is-open .pricing-included-list {
+  opacity: 1;
+}
+
+.pricing-included-list::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 8px;
+  border-left: 1px solid #c5ced8;
+}
+
+.pricing-included-list li {
+  position: relative;
+  display: block;
+  margin: 0;
+  padding: 6px 0 6px 22px;
+  gap: 0;
+}
+
+.pricing-included-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-left: 1px solid #c5ced8;
+}
+
+.pricing-included-list li::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: calc(6px + 0.7em);
+  width: 14px;
+  height: 1px;
+  background: #c5ced8;
+}
+
+.pricing-included-list li:last-child::before {
+  bottom: auto;
+  width: 14px;
+  height: calc(6px + 0.7em);
+  border-bottom: 1px solid #c5ced8;
+  border-bottom-left-radius: 7px;
+}
+
+.pricing-included-list li:last-child::after {
+  content: none;
+}
+
+.pricing-card-check,
+.pricing-card-cross {
   width: 18px;
   height: 18px;
   margin-top: 1px;
   flex-shrink: 0;
+}
+
+.pricing-card-check {
   color: rgba(0, 0, 0, 0.72);
+}
+
+.pricing-card-cross {
+  color: #dc2626;
+}
+
+.pricing-card-features li.is-unavailable {
+  color: var(--muted);
+}
+
+.pricing-card-mark {
+  margin-left: 1px;
+  font-size: 0.75em;
+  line-height: 0;
+}
+
+.pricing-card-limit {
+  align-self: flex-end;
+  margin: 0 20px 18px;
+  max-width: calc(100% - 40px);
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: right;
+  color: var(--muted);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2096,9 +2703,21 @@ button[aria-busy="true"] {
   .ats-scope.is-in-view .ats-radar,
   .footer-strike,
   .mesh-hero,
-  .plan-card-pro,
+  .plan-aurora-wave,
+  .plan-card-bloom,
   .auth-feedback {
     animation: none;
+  }
+
+  .plan-aurora,
+  .plan-aurora-wave,
+  .plan-card-pro:hover .plan-aurora-wave {
+    scale: none;
+    transition: none;
+  }
+
+  .plan-card-tray {
+    transition: none;
   }
 
   .ats-ring {
@@ -2136,6 +2755,9 @@ button[aria-busy="true"] {
   .btn-secondary,
   .faq-answer,
   .faq-icon,
+  .pricing-included-panel,
+  .pricing-included-list,
+  .pricing-included-chevron,
   .card-stack-layer,
   .trust-band,
   .trust-chip,
@@ -2151,7 +2773,18 @@ button[aria-busy="true"] {
     transition: none;
   }
 
-  .pricing-card-period-text {
+  .pricing-card-period-text,
+  .btn-spinner-tick,
+  .skeleton {
+    animation: none;
+  }
+
+  .btn-spinner {
+    animation: btn-spin 1s linear infinite;
+  }
+
+  .avatar-motion-once :is(.dbga-eye, .dbga-look, .dbga-hop),
+  :hover > .avatar-motion-hover :is(.dbga-eye, .dbga-look, .dbga-hop) {
     animation: none;
   }
 

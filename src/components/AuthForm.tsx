@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useRef, useState, type ReactNode } from "react";
 import { authClient } from "@/lib/auth-client";
 import { authPageHref, betterAuthAcceptsCallbackURL } from "@/lib/auth-origins";
+import { pushSignUp } from "@/lib/gtm";
 import { BusyButton, holdBusy, paintPending } from "@/components/BusyButton";
 import {
   IconAlertCircle,
@@ -257,20 +258,22 @@ export function SignupForm({ nextPath = "/account" }: { nextPath?: string }) {
     setError("");
     await paintPending(() => setPending(true));
     const startedAt = Date.now();
+    const callbackURL = betterAuthAcceptsCallbackURL(nextPath)
+      ? nextPath
+      : "/account";
     try {
-      const { error: result } = await authClient.signUp.email({
+      const { data, error: result } = await authClient.signUp.email({
         name: String(form.get("name") || ""),
         email: String(form.get("email") || ""),
         password: String(form.get("password") || ""),
-        callbackURL: betterAuthAcceptsCallbackURL(nextPath)
-          ? nextPath
-          : "/account",
+        callbackURL,
       });
       if (result) {
         submittingRef.current = false;
         setError(result.message || "Could not create account.");
         return;
       }
+      pushSignUp({ nextPath: callbackURL, userId: data?.user.id });
       setCreated(true);
     } catch {
       submittingRef.current = false;

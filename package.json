@@ -11,6 +11,8 @@
     "email": "email dev --dir emails --port 3333"
   },
   "dependencies": {
+    "@dicebear/core": "^10.7.0",
+    "@dicebear/styles": "^10.6.0",
     "@paddle/paddle-js": "^1.6.5",
     "@paddle/paddle-node-sdk": "^3.10.0",
     "better-auth": "^1.7.1",

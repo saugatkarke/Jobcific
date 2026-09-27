@@ -3,6 +3,7 @@ import {
   ATS_MAX_ATTEMPTS,
   ATS_RETRY_BACKOFF_MS,
 } from "./ats-budget";
+import { maskResumeContacts, scrubFeedbackText } from "./resume-privacy";
 
 const GEMINI_URL =
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent";
@@ -11,17 +12,35 @@ const MAX_RESUME_CHARS = 40_000;
 const MAX_JOB_CHARS = 20_000;
 const MAX_OUTPUT_TOKENS = 1024;
 
+const FEEDBACK_LIMITS = {
+  strengths: 3,
+  gaps: 3,
+  missingKeywords: 8,
+  contactIssues: 4,
+  formatting: 3,
+  improvements: 3,
+} as const;
+
+function feedbackListSchema(minItems: number, maxItems: number) {
+  return {
+    type: "array",
+    items: { type: "string" },
+    minItems,
+    maxItems,
+  } as const;
+}
+
 const ATS_RESPONSE_SCHEMA = {
   type: "object",
   properties: {
     score: { type: "integer", minimum: 0, maximum: 100 },
-    summary: { type: "string" },
-    tips: {
-      type: "array",
-      items: { type: "string" },
-      minItems: 1,
-      maxItems: 5,
-    },
+    overview: { type: "string" },
+    strengths: feedbackListSchema(0, FEEDBACK_LIMITS.strengths),
+    gaps: feedbackListSchema(0, FEEDBACK_LIMITS.gaps),
+    missingKeywords: feedbackListSchema(0, FEEDBACK_LIMITS.missingKeywords),
+    contactIssues: feedbackListSchema(0, FEEDBACK_LIMITS.contactIssues),
+    formatting: feedbackListSchema(0, FEEDBACK_LIMITS.formatting),
+    improvements: feedbackListSchema(1, FEEDBACK_LIMITS.improvements),
     dimensions: {
       type: "object",
       properties: {
@@ -42,14 +61,33 @@ const ATS_RESPONSE_SCHEMA = {
       ],
     },
   },
-  required: ["score", "summary", "tips", "dimensions"],
+  required: [
+    "score",
+    "overview",
+    "strengths",
+    "gaps",
+    "missingKeywords",
+    "contactIssues",
+    "formatting",
+    "improvements",
+    "dimensions",
+  ],
 } as const;
 
-const ATS_SYSTEM_PROMPT =
-  "You are an ATS (Applicant Tracking System) resume reviewer for Seek jobs in Australia and New Zealand. " +
-  "Compare the candidate resume to the job description. Be practical and specific. " +
-  "Give an overall score 0-100 plus six dimension scores 0-100: keywords, experience, skills, formatting, qualifications, roleFit. " +
-  "Return only structured data matching the schema. Tips must be 1-5 actionable tips.";
+const ATS_SYSTEM_PROMPT = [
+  "You are an ATS (Applicant Tracking System) resume reviewer. Compare the resume to the job listing and give practical, specific feedback.",
+  "Give an overall score 0-100 plus six dimension scores 0-100: keywords, experience, skills, formatting, qualifications, roleFit.",
+  'Write every sentence directly to the job seeker in second person ("Your resume...", "You show...", "Add..."). Never write "the candidate", "the applicant", "they", "he", or "she".',
+  "Never mention the person's name, email address, phone number, street address, or any other personal identifier. Never quote contact details.",
+  'overview: 1-2 sentences, at most 40 words, starting with "Your resume".',
+  "strengths: up to 3 things that already match the job.",
+  "gaps: up to 3 job requirements the resume does not show.",
+  "missingKeywords: up to 8 job terms missing from the resume, 1-3 words each.",
+  'contactIssues: check email, phone, location (city and state or country), and LinkedIn. List only what is missing, for example "Your phone number is missing." Placeholders such as [email provided] mean the detail is present. Do not flag a missing street address.',
+  "formatting: up to 3 layout or ATS readability issues.",
+  "improvements: 1-3 actionable changes, highest impact first.",
+  "Keep each list item under 15 words. Use an empty list when a section has nothing to report. Return only structured data matching the schema.",
+].join("\n");
 
 type AtsDimensions = {
   keywords: number;
@@ -72,10 +110,21 @@ export type AtsUsage = {
   totalTokens: number;
 };
 
+export type AtsSections = {
+  overview: string;
+  strengths: string[];
+  gaps: string[];
+  missingKeywords: string[];
+  contactIssues: string[];
+  formatting: string[];
+  improvements: string[];
+};
+
 export type AtsResult = {
   score: number;
   summary: string;
   tips: string[];
+  sections: AtsSections;
   dimensions: AtsDimensions;
   model: string;
   usage: AtsUsage;
@@ -128,8 +177,8 @@ function requireEnv(name: string): string {
 
 function promptText(input: AtsInput): string {
   return [
-    "Score how well this resume matches the job for ATS screening.",
-    "Include overall score and all six dimension scores.",
+    "Review this resume against the job listing for ATS screening.",
+    "Return the overall score, all six dimension scores, and every feedback section.",
     "",
     "=== JOB DESCRIPTION ===",
     input.jobText,
@@ -170,14 +219,43 @@ function toNonEmptyString(value: unknown): string {
   return text;
 }
 
-function toTips(value: unknown): string[] {
+function toFeedbackList(value: unknown, max: number): string[] {
+  if (value === undefined || value === null) return [];
   if (!Array.isArray(value)) fail("MODEL_RESPONSE_INVALID");
-  const tips = value
-    .map((tip) => normalizeText(tip))
+  return value
+    .map((item) => scrubFeedbackText(normalizeText(item)))
     .filter(Boolean)
-    .slice(0, 5);
-  if (tips.length < 1) fail("MODEL_RESPONSE_INVALID");
-  return tips;
+    .slice(0, max);
+}
+
+/**
+ * Older extension builds require a non-empty summary and at least one tip,
+ * so overview and improvements are mandatory.
+ */
+function toSections(parsed: Record<string, unknown>): AtsSections {
+  if (typeof parsed.overview !== "string") fail("MODEL_RESPONSE_INVALID");
+  const overview = scrubFeedbackText(toNonEmptyString(parsed.overview));
+  if (!overview) fail("MODEL_RESPONSE_INVALID");
+  const improvements = toFeedbackList(
+    parsed.improvements,
+    FEEDBACK_LIMITS.improvements,
+  );
+  if (improvements.length < 1) fail("MODEL_RESPONSE_INVALID");
+  return {
+    overview,
+    strengths: toFeedbackList(parsed.strengths, FEEDBACK_LIMITS.strengths),
+    gaps: toFeedbackList(parsed.gaps, FEEDBACK_LIMITS.gaps),
+    missingKeywords: toFeedbackList(
+      parsed.missingKeywords,
+      FEEDBACK_LIMITS.missingKeywords,
+    ),
+    contactIssues: toFeedbackList(
+      parsed.contactIssues,
+      FEEDBACK_LIMITS.contactIssues,
+    ),
+    formatting: toFeedbackList(parsed.formatting, FEEDBACK_LIMITS.formatting),
+    improvements,
+  };
 }
 
 function toDimensions(value: unknown): AtsDimensions {
@@ -223,7 +301,9 @@ function extractCandidateText(value: GeminiResponse): string {
 export function validateAtsInput(value: unknown): AtsInput {
   if (!value || typeof value !== "object") fail("INVALID_INPUT");
   const raw = value as Record<string, unknown>;
-  const resumeText = clipText(normalizeText(raw.resumeText), MAX_RESUME_CHARS);
+  const resumeText = maskResumeContacts(
+    clipText(normalizeText(raw.resumeText), MAX_RESUME_CHARS),
+  );
   const jobText = clipText(normalizeText(raw.jobText), MAX_JOB_CHARS);
   const jobId = normalizeText(raw.jobId) || null;
 
@@ -263,10 +343,12 @@ export function parseGeminiResponse(value: unknown): AtsResult {
   try {
     const body = (value || {}) as GeminiResponse;
     const parsed = JSON.parse(extractCandidateText(body)) as Record<string, unknown>;
+    const sections = toSections(parsed);
     return {
       score: toBoundedInteger(parsed.score),
-      summary: toNonEmptyString(parsed.summary),
-      tips: toTips(parsed.tips),
+      summary: sections.overview,
+      tips: sections.improvements.slice(),
+      sections,
       dimensions: toDimensions(parsed.dimensions),
       model: normalizeText(body.modelVersion) || GEMINI_MODEL,
       usage: toUsage(body.usageMetadata),

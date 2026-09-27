@@ -93,7 +93,7 @@ export function HeroInstallSplit({
   );
 }
 
-function ChromeMark() {
+export function ChromeMark() {
   return (
     <Image
       src="/chrome_logo.webp"

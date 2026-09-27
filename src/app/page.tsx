@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import Link from "next/link";
+import { PendingLink } from "@/components/BusyButton";
 import { FaqAccordion } from "@/components/FaqAccordion";
 import { FeatureBento } from "@/components/FeatureBento";
 import {
@@ -31,9 +31,13 @@ export default function HomePage() {
               deserves a custom resume. Most of them don&apos;t.
             </p>
             <div className="hero-enter hero-enter-4 mt-8 flex flex-wrap justify-center gap-3">
-              <Link href="/pricing" className="btn-primary">
+              <PendingLink
+                href="/pricing"
+                className="btn-primary"
+                pendingLabel="Getting Pro..."
+              >
                 Get Pro
-              </Link>
+              </PendingLink>
               <HeroInstallSplit
                 seekUrl={SEEK_CWS_URL}
                 indeedUrl={INDEED_CWS_URL}
@@ -99,9 +103,13 @@ export default function HomePage() {
             title="2. Sign in here"
             body="Create an email account. The popup Sign in connects the extension later."
             actions={
-              <Link href="/signup" className="btn-secondary">
+              <PendingLink
+                href="/signup"
+                className="btn-secondary"
+                pendingLabel="Signing up..."
+              >
                 Sign Up
-              </Link>
+              </PendingLink>
             }
           />
         </Reveal>
@@ -114,9 +122,13 @@ export default function HomePage() {
             title="3. Choose your Plan"
             body="Monthly or yearly overlay checkout. We never store card numbers."
             actions={
-              <Link href="/pricing" className="btn-primary">
+              <PendingLink
+                href="/pricing"
+                className="btn-primary"
+                pendingLabel="Getting Pro..."
+              >
                 Get Pro
-              </Link>
+              </PendingLink>
             }
           />
         </Reveal>
@@ -145,15 +157,20 @@ export default function HomePage() {
             Apply for your dream job with clarity
           </h2>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/pricing" className="btn-primary">
+            <PendingLink
+              href="/pricing"
+              className="btn-primary"
+              pendingLabel="Getting Pro..."
+            >
               Get Pro
-            </Link>
-            <Link
+            </PendingLink>
+            <PendingLink
               href="/signup"
               className="btn-secondary border-white/25 bg-transparent text-white hover:bg-white/10"
+              pendingLabel="Signing up..."
             >
               Create account
-            </Link>
+            </PendingLink>
           </div>
         </div>
       </GridBand>

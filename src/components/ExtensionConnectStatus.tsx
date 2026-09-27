@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { BtnSpinner } from "./BusyButton";
 
 type ConnectStatus = "connecting" | "waiting" | "error";
 
@@ -48,7 +49,9 @@ export function ExtensionConnectStatus() {
     >
       {status === "connecting" ? (
         <div className="flex items-center gap-3">
-          <span className="btn-spinner text-[var(--ink)]" aria-hidden="true" />
+          <span className="flex text-[var(--ink)]">
+            <BtnSpinner size="1.5rem" />
+          </span>
           <div>
             <p className="text-sm font-medium">Connecting your extension…</p>
             <p className="mt-1 text-sm text-[var(--muted)]">

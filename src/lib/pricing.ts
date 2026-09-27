@@ -62,7 +62,7 @@ export function pricingProCta({
     return { label: "Subscribed", disabled: true, showLegal: false };
   }
   return {
-    label: pending ? "Starting…" : "Subscribe",
+    label: pending ? "Subscribing..." : "Subscribe",
     disabled: pending,
     showLegal: true,
   };

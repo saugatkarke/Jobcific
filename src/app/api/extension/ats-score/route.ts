@@ -90,6 +90,7 @@ export async function POST(req: NextRequest) {
       score: result.score,
       summary: result.summary,
       tips: result.tips,
+      sections: result.sections,
       dimensions: result.dimensions,
       model: result.model,
       usage: result.usage,

@@ -162,6 +162,26 @@ export function IconUser({ className }: IconProps) {
   );
 }
 
+export function IconPencil({ className }: IconProps) {
+  return (
+    <svg {...strokeProps(className)}>
+      <path
+        d="M4 20h4L19 9a2.83 2.83 0 0 0-4-4L4 16v4z"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M13.5 6.5l4 4"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export function IconUserPlus({ className }: IconProps) {
   return (
     <svg {...strokeProps(className)}>
@@ -278,6 +298,53 @@ export function IconStar({
   );
 }
 
+const BLOOM_PETALS = Array.from({ length: 10 }, (_, index) => {
+  const angle = (index / 10) * Math.PI * 2;
+  return {
+    cx: Number((12 + 8.4 * Math.cos(angle)).toFixed(2)),
+    cy: Number((12 + 8.4 * Math.sin(angle)).toFixed(2)),
+    opacity: Number((1 - (index % 5) * 0.12).toFixed(2)),
+  };
+});
+
+export function IconBloom({
+  className,
+  gradientId = "theme-bloom-gradient",
+}: IconProps & { gradientId?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill={`url(#${gradientId})`}
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+    >
+      <defs>
+        <linearGradient
+          id={gradientId}
+          x1="3"
+          y1="3"
+          x2="21"
+          y2="21"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop offset="0%" stopColor="var(--mint)" />
+          <stop offset="100%" stopColor="var(--gold)" />
+        </linearGradient>
+      </defs>
+      {BLOOM_PETALS.map((petal) => (
+        <circle
+          key={`${petal.cx}-${petal.cy}`}
+          cx={petal.cx}
+          cy={petal.cy}
+          r="2.6"
+          opacity={petal.opacity}
+        />
+      ))}
+    </svg>
+  );
+}
+
 export function IconCoffee({ className }: IconProps) {
   return (
     <svg {...strokeProps(className)}>
@@ -320,6 +387,26 @@ export function IconCheckCircle({ className }: IconProps) {
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function IconXCircle({ className }: IconProps) {
+  return (
+    <svg {...strokeProps(className)}>
+      <circle
+        cx="12"
+        cy="12"
+        r="8.25"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+      <path
+        d="M9.2 9.2 14.8 14.8M14.8 9.2 9.2 14.8"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
       />
     </svg>
   );

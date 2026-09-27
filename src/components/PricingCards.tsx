@@ -8,8 +8,14 @@ import {
   type KeyboardEvent,
 } from "react";
 import Link from "next/link";
+import { BtnSpinner, usePageShowReset } from "./BusyButton";
 import { HeroInstallSplit } from "./HeroInstallSplit";
-import { IconCheckCircle, IconCoffee } from "./icons";
+import {
+  IconCheckCircle,
+  IconChevronDown,
+  IconCoffee,
+  IconXCircle,
+} from "./icons";
 import { INDEED_CWS_URL, SEEK_CWS_URL } from "@/lib/cws";
 import { canStartSubscribe } from "@/lib/legal";
 import { startPaddleCheckout } from "@/lib/paddle-checkout";
@@ -174,21 +180,23 @@ function SlotPrice({ value, slotId }: { value: string; slotId: string }) {
 
 type Interval = BillingInterval;
 
+const ATS_SCORE_FEATURE = "Score a resume against the job description";
+
 const FREE_FEATURES = [
-  "Listing metrics: date, salary, applicants",
-  "Copy JD and save",
-  "Local Kanban board",
-  "CSV export",
-  "Resume stays in the browser",
+  "Published dates and interest counts",
+  "Copy JD and save jobs",
+  "Local application board",
+  "CSV export and local resume storage",
 ];
 
-const PRO_FEATURES = [
-  "Everything in Free",
+const FREE_UNAVAILABLE = [
   "Hide / Unhide job cards",
   "ATS score results",
-  "Indeed and Seek together",
-  "Score a resume against the JD",
+  ATS_SCORE_FEATURE,
 ];
+
+const PRO_FEATURES = ["Hide / Unhide job cards", "ATS score results"];
+const ATS_SCORE_LIMIT = "1,000";
 
 const PRO_BADGE = "Skip one coffee. Get Pro.";
 
@@ -208,7 +216,9 @@ export function PricingCards({
   );
   const cardOrder = pricingCardOrder(isAuthenticated);
   const intervalTabs = pricingIntervalTabs(subscribedInterval);
+  const [freeIncludedOpen, setFreeIncludedOpen] = useState(true);
   const [pending, setPending] = useState(false);
+  usePageShowReset(setPending);
   const [agreedToLegal, setAgreedToLegal] = useState(false);
   const [error, setError] = useState("");
   const toggleRef = useRef<HTMLDivElement>(null);
@@ -264,18 +274,15 @@ export function PricingCards({
       return;
     }
     setPending(true);
-    try {
-      const result = await startPaddleCheckout(priceId);
-      if (result.status === "login") {
-        window.location.href = "/signup?next=/pricing";
-        return;
-      }
-      if (result.status === "error") {
-        setError(result.message);
-      }
-    } finally {
-      setPending(false);
+    const result = await startPaddleCheckout(priceId);
+    if (result.status === "login") {
+      window.location.href = "/signup?next=/pricing";
+      return;
     }
+    if (result.status === "error") {
+      setError(result.message);
+    }
+    setPending(false);
   }
 
   return (
@@ -328,7 +335,6 @@ export function PricingCards({
                   <span>$0</span>
                   <span className="pricing-card-period">/forever</span>
                 </p>
-                <div className="pricing-card-rule" aria-hidden="true" />
                 <p className="pricing-card-tagline">
                   Track Indeed and Seek without paying. Metrics, save, and a local
                   board.
@@ -344,6 +350,12 @@ export function PricingCards({
                 {FREE_FEATURES.map((feature) => (
                   <li key={feature}>
                     <IconCheckCircle className="pricing-card-check" />
+                    {feature}
+                  </li>
+                ))}
+                {FREE_UNAVAILABLE.map((feature) => (
+                  <li key={feature} className="is-unavailable">
+                    <IconXCircle className="pricing-card-cross" />
                     {feature}
                   </li>
                 ))}
@@ -376,7 +388,6 @@ export function PricingCards({
                     </span>
                   </span>
                 </p>
-                <div className="pricing-card-rule" aria-hidden="true" />
                 <p className="pricing-card-tagline">
                   Best for people who want to hide listings and score a resume
                   against the JD.
@@ -390,8 +401,10 @@ export function PricingCards({
                   }
                   data-price-id={priceId}
                   disabled={cta.disabled}
+                  aria-busy={pending || undefined}
                   onClick={subscribe}
                 >
+                  {pending ? <BtnSpinner /> : null}
                   {cta.label}
                 </button>
                 {cta.showLegal ? (
@@ -441,13 +454,58 @@ export function PricingCards({
                 ) : null}
               </div>
               <ul className="pricing-card-features">
+                <li className="pricing-included">
+                  <button
+                    type="button"
+                    className={
+                      freeIncludedOpen
+                        ? "pricing-included-toggle is-open"
+                        : "pricing-included-toggle"
+                    }
+                    aria-expanded={freeIncludedOpen}
+                    aria-controls="pricing-free-included"
+                    onClick={() => setFreeIncludedOpen((open) => !open)}
+                  >
+                    <IconCheckCircle className="pricing-card-check" />
+                    <span>Everything in Free</span>
+                    <IconChevronDown className="pricing-included-chevron" />
+                  </button>
+                  <div
+                    id="pricing-free-included"
+                    className={
+                      freeIncludedOpen
+                        ? "pricing-included-panel is-open"
+                        : "pricing-included-panel"
+                    }
+                    aria-hidden={!freeIncludedOpen}
+                  >
+                    <div className="pricing-included-clip">
+                      <ul className="pricing-included-list">
+                        {FREE_FEATURES.map((feature) => (
+                          <li key={feature}>{feature}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </li>
                 {PRO_FEATURES.map((feature) => (
                   <li key={feature}>
                     <IconCheckCircle className="pricing-card-check" />
                     {feature}
                   </li>
                 ))}
+                <li>
+                  <IconCheckCircle className="pricing-card-check" />
+                  <span>
+                    {ATS_SCORE_FEATURE}
+                    <sup className="pricing-card-mark">*</sup>
+                  </span>
+                </li>
               </ul>
+              <p className="pricing-card-limit">
+                * Up to {ATS_SCORE_LIMIT} ATS scores per{" "}
+                {interval === "monthly" ? "month" : "year"}.
+              </p>
             </article>
           ),
         )}

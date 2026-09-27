@@ -77,11 +77,25 @@ export async function entitlementPayload(req: NextRequest) {
   }
 
   if (!userId) {
-    return { authenticated: false, email: null, ...emptyEntitlement() };
+    return {
+      authenticated: false,
+      email: null,
+      ...emptyEntitlement(),
+      interval: null,
+    };
   }
 
+  return entitlementForUser(userId, email);
+}
+
+export async function entitlementForUser(userId: string, email: string | null) {
   if (!process.env.DATABASE_URL) {
-    return { authenticated: true, email, ...emptyEntitlement() };
+    return {
+      authenticated: true,
+      email,
+      ...emptyEntitlement(),
+      interval: null,
+    };
   }
 
   const row = await latestSubscriptionRow(userId);
@@ -94,5 +108,10 @@ export async function entitlementPayload(req: NextRequest) {
         }
       : null,
   );
-  return { authenticated: true, email, ...resolved };
+  return {
+    authenticated: true,
+    email,
+    ...resolved,
+    interval: proBillingIntervalFromRow(row),
+  };
 }

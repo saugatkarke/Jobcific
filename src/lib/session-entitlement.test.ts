@@ -6,6 +6,7 @@ vi.mock("./extension-auth", () => ({
 
 import { verifyAccessJwt } from "./extension-auth";
 import {
+  entitlementForUser,
   extensionClaimsFromRequest,
   proBillingIntervalFromRow,
 } from "./session-entitlement";
@@ -59,6 +60,22 @@ describe("extensionClaimsFromRequest", () => {
         headers: new Headers({ authorization: "Bearer bad-token" }),
       }),
     ).resolves.toBeNull();
+  });
+});
+
+describe("entitlementForUser", () => {
+  it("returns a free entitlement when no database is configured", async () => {
+    vi.stubEnv("DATABASE_URL", "");
+
+    await expect(
+      entitlementForUser("user_123", "free@example.com"),
+    ).resolves.toMatchObject({
+      authenticated: true,
+      email: "free@example.com",
+      plan: "free",
+      status: "none",
+      interval: null,
+    });
   });
 });
 
