@@ -4,6 +4,7 @@ import { nextCookies } from "better-auth/next-js";
 import { magicLink } from "better-auth/plugins";
 import { getDb } from "./db";
 import { sendAuthEmail } from "./mail";
+import { markVerifiedEventPending } from "./verified-event";
 import { appTrustedOrigins } from "./auth-origins";
 import { APP_NAME } from "./copy";
 import * as schema from "./schema";
@@ -48,6 +49,16 @@ function createAuth() {
           url,
           name: user.name,
         });
+      },
+      afterEmailVerification: async (user) => {
+        try {
+          await markVerifiedEventPending(user.id);
+        } catch (error) {
+          console.error(
+            "Could not record email verification for analytics",
+            error,
+          );
+        }
       },
     },
     plugins: [

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { Roboto } from "next/font/google";
 import { SessionProvider } from "@/components/SessionProvider";
+import { VerifiedEventBeacon } from "@/components/VerifiedEventBeacon";
 import { APP_NAME } from "@/lib/copy";
 import "./globals.css";
 
@@ -54,6 +55,7 @@ export default function RootLayout({
             })(window, document, "clarity", "script", "yk9ou5rl9c");
           `}
         </Script>
+        <VerifiedEventBeacon />
         <SessionProvider>{children}</SessionProvider>
       </body>
     </html>
