@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { pushSignUp, signUpDataLayerEvent } from "./gtm";
+import {
+  emailVerifiedDataLayerEvent,
+  pushEmailVerified,
+  pushSignUp,
+  signUpDataLayerEvent,
+} from "./gtm";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -54,6 +59,31 @@ describe("pushSignUp", () => {
         event: "sign_up",
         method: "email",
         next_path: "/account",
+      },
+    ]);
+  });
+});
+
+describe("emailVerifiedDataLayerEvent", () => {
+  it("sends the verified event with the user id only", () => {
+    expect(emailVerifiedDataLayerEvent("user-1")).toEqual({
+      event: "email_verified",
+      user_id: "user-1",
+    });
+  });
+});
+
+describe("pushEmailVerified", () => {
+  it("appends the verified event to the GTM data layer", () => {
+    const dataLayer: Record<string, unknown>[] = [];
+    vi.stubGlobal("window", { dataLayer });
+
+    pushEmailVerified("user-1");
+
+    expect(dataLayer).toEqual([
+      {
+        event: "email_verified",
+        user_id: "user-1",
       },
     ]);
   });

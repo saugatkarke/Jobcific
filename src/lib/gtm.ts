@@ -26,3 +26,16 @@ export function pushSignUp(input: { nextPath: string; userId?: string }) {
   window.dataLayer = window.dataLayer ?? [];
   window.dataLayer.push(signUpDataLayerEvent(input));
 }
+
+export function emailVerifiedDataLayerEvent(userId: string): DataLayerEvent {
+  return {
+    event: "email_verified",
+    user_id: userId,
+  };
+}
+
+export function pushEmailVerified(userId: string) {
+  if (typeof window === "undefined" || !userId) return;
+  window.dataLayer = window.dataLayer ?? [];
+  window.dataLayer.push(emailVerifiedDataLayerEvent(userId));
+}
