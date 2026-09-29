@@ -3,6 +3,7 @@ import {
   appTrustedOrigins,
   authPageHref,
   betterAuthAcceptsCallbackURL,
+  magicLinkCallbackURL,
 } from "./auth-origins";
 
 afterEach(() => {
@@ -36,6 +37,18 @@ describe("betterAuthAcceptsCallbackURL", () => {
     const next =
       "/extension/connect?redirect_uri=https://omdijdkofmlgjjipfaknienpebhoafem.chromiumapp.org/&state=abc&code_challenge=abc&code_challenge_method=S256";
     expect(betterAuthAcceptsCallbackURL(next)).toBe(false);
+  });
+});
+
+describe("magicLinkCallbackURL", () => {
+  it("marks an accepted in-app path as a magic-link login", () => {
+    expect(magicLinkCallbackURL("/account")).toBe("/account?login=magic_link");
+  });
+
+  it("falls back to account when Better Auth would reject the next path", () => {
+    const next =
+      "/extension/connect?redirect_uri=https://omdijdkofmlgjjipfaknienpebhoafem.chromiumapp.org/";
+    expect(magicLinkCallbackURL(next)).toBe("/account?login=magic_link");
   });
 });
 

@@ -24,6 +24,14 @@ export function betterAuthAcceptsCallbackURL(url: string): boolean {
   return url.startsWith("/") && BETTER_AUTH_RELATIVE_CALLBACK.test(url);
 }
 
+export function magicLinkCallbackURL(nextPath: string): string {
+  const base = betterAuthAcceptsCallbackURL(nextPath) ? nextPath : "/account";
+  const url = new URL(base, "https://jobcific.local");
+  url.searchParams.set("login", "magic_link");
+  const next = `${url.pathname}${url.search}`;
+  return betterAuthAcceptsCallbackURL(next) ? next : base;
+}
+
 export function authPageHref(path: "/login" | "/signup", nextPath: string): string {
   if (!nextPath.startsWith("/") || nextPath === "/account") return path;
   return `${path}?next=${encodeURIComponent(nextPath)}`;
