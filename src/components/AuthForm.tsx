@@ -3,8 +3,12 @@
 import Link from "next/link";
 import { FormEvent, useRef, useState, type ReactNode } from "react";
 import { authClient } from "@/lib/auth-client";
-import { authPageHref, betterAuthAcceptsCallbackURL } from "@/lib/auth-origins";
-import { pushSignUp } from "@/lib/gtm";
+import {
+  authPageHref,
+  betterAuthAcceptsCallbackURL,
+  magicLinkCallbackURL,
+} from "@/lib/auth-origins";
+import { pushLogin, pushSignUp } from "@/lib/gtm";
 import { BusyButton, holdBusy, paintPending } from "@/components/BusyButton";
 import {
   IconAlertCircle,
@@ -124,7 +128,7 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
     await paintPending(() => setPending("password"));
     const startedAt = Date.now();
     try {
-      const { error: result } = await authClient.signIn.email({
+      const { data, error: result } = await authClient.signIn.email({
         email,
         password: String(form.get("password") || ""),
       });
@@ -141,7 +145,9 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
         setError(result.message || "Could not sign in.");
         return;
       }
-      window.location.assign(nextPath);
+      pushLogin({ method: "email", userId: data?.user.id }, () => {
+        window.location.assign(nextPath);
+      });
     } catch {
       await holdBusy(startedAt);
       submittingRef.current = false;
@@ -160,9 +166,7 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
     try {
       const { error: result } = await authClient.signIn.magicLink({
         email,
-        callbackURL: betterAuthAcceptsCallbackURL(nextPath)
-          ? nextPath
-          : "/account",
+        callbackURL: magicLinkCallbackURL(nextPath),
       });
       await holdBusy(startedAt);
       submittingRef.current = false;

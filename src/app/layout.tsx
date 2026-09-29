@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import { Roboto } from "next/font/google";
+import { PushMagicLinkLogin } from "@/components/PushMagicLinkLogin";
 import { SessionProvider } from "@/components/SessionProvider";
 import { VerifiedEventBeacon } from "@/components/VerifiedEventBeacon";
 import { APP_NAME } from "@/lib/copy";
@@ -56,6 +57,7 @@ export default function RootLayout({
           `}
         </Script>
         <VerifiedEventBeacon />
+        <PushMagicLinkLogin />
         <SessionProvider>{children}</SessionProvider>
       </body>
     </html>
