@@ -39,3 +39,44 @@ export function pushEmailVerified(userId: string) {
   window.dataLayer = window.dataLayer ?? [];
   window.dataLayer.push(emailVerifiedDataLayerEvent(userId));
 }
+
+export type LoginMethod = "email" | "magic_link";
+
+export function loginDataLayerEvent(input: {
+  method: LoginMethod;
+  userId?: string;
+}): DataLayerEvent {
+  return {
+    event: "login",
+    method: input.method,
+    ...(input.userId ? { user_id: input.userId } : {}),
+  };
+}
+
+export function pushLogin(
+  input: { method: LoginMethod; userId?: string },
+  onSent?: () => void,
+) {
+  if (typeof window === "undefined") {
+    onSent?.();
+    return;
+  }
+  const payload = loginDataLayerEvent(input);
+  window.dataLayer = window.dataLayer ?? [];
+  if (!onSent) {
+    window.dataLayer.push(payload);
+    return;
+  }
+  let finished = false;
+  const finish = () => {
+    if (finished) return;
+    finished = true;
+    onSent();
+  };
+  window.dataLayer.push({
+    ...payload,
+    eventCallback: finish,
+    eventTimeout: 2000,
+  });
+  globalThis.setTimeout(finish, 2000);
+}

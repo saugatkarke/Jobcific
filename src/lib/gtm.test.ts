@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   emailVerifiedDataLayerEvent,
+  loginDataLayerEvent,
   pushEmailVerified,
+  pushLogin,
   pushSignUp,
   signUpDataLayerEvent,
 } from "./gtm";
@@ -70,6 +72,37 @@ describe("emailVerifiedDataLayerEvent", () => {
       event: "email_verified",
       user_id: "user-1",
     });
+  });
+});
+
+describe("loginDataLayerEvent", () => {
+  it("sends login method and user id", () => {
+    expect(loginDataLayerEvent({ method: "email", userId: "user-1" })).toEqual({
+      event: "login",
+      method: "email",
+      user_id: "user-1",
+    });
+  });
+});
+
+describe("pushLogin", () => {
+  it("appends the login event and continues after the tag callback", () => {
+    vi.useFakeTimers();
+    const dataLayer: Array<Record<string, unknown> & { eventCallback?: () => void }> =
+      [];
+    vi.stubGlobal("window", { dataLayer });
+    const onSent = vi.fn();
+
+    pushLogin({ method: "email", userId: "user-1" }, onSent);
+    dataLayer[0]?.eventCallback?.();
+
+    expect(dataLayer[0]).toMatchObject({
+      event: "login",
+      method: "email",
+      user_id: "user-1",
+    });
+    expect(onSent).toHaveBeenCalledOnce();
+    vi.useRealTimers();
   });
 });
 
