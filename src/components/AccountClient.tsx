@@ -468,7 +468,10 @@ export function AccountExtensionCard() {
               {connection ? (
                 <span className="text-right">
                   <span className="font-medium text-emerald-800">Connected</span>
-                  <span className="ml-2 text-[var(--muted)]">
+                  <span aria-hidden className="mx-2 text-[var(--muted)]">
+                    ·
+                  </span>
+                  <span className="text-[var(--muted)]">
                     {connection.syncedLabel}
                   </span>
                 </span>
