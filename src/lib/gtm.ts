@@ -74,6 +74,27 @@ export function pushBeginCheckout(input: {
   window.dataLayer.push(beginCheckoutDataLayerEvent(input));
 }
 
+export function purchaseDataLayerEvent(input: {
+  interval: "monthly" | "yearly";
+  value: number;
+}): DataLayerEvent {
+  return {
+    event: "purchase",
+    currency: "USD",
+    value: input.value,
+    interval: input.interval,
+  };
+}
+
+export function pushPurchase(input: {
+  interval: "monthly" | "yearly";
+  value: number;
+}) {
+  if (typeof window === "undefined") return;
+  window.dataLayer = window.dataLayer ?? [];
+  window.dataLayer.push(purchaseDataLayerEvent(input));
+}
+
 export function pushLogin(
   input: { method: LoginMethod; userId?: string },
   onSent?: () => void,

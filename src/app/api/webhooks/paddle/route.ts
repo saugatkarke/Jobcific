@@ -3,6 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { getPaddle } from "@/lib/paddle";
 import { mapPaddleSubscription, shouldApplyEvent } from "@/lib/paddle-map";
+import {
+  markPurchaseEventPending,
+  purchaseIntervalToQueue,
+} from "@/lib/purchase-event";
 import { paddleEvent, subscription, user } from "@/lib/schema";
 
 type PaddleEvent = {
@@ -90,6 +94,16 @@ export async function POST(req: NextRequest) {
             .update(user)
             .set({ paddleCustomerId: mapped.paddleCustomerId })
             .where(eq(user.id, mapped.userId));
+        }
+        const purchaseInterval = purchaseIntervalToQueue({
+          eventType: type,
+          status: mapped.status,
+          plan: mapped.plan,
+          previousPriceId: prior[0]?.paddlePriceId ?? null,
+          nextPriceId: mapped.paddlePriceId,
+        });
+        if (purchaseInterval) {
+          await markPurchaseEventPending(mapped.userId, purchaseInterval);
         }
       }
     }

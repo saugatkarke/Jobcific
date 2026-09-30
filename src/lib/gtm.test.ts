@@ -6,6 +6,8 @@ import {
   pushBeginCheckout,
   pushEmailVerified,
   pushLogin,
+  pushPurchase,
+  purchaseDataLayerEvent,
   pushSignUp,
   signUpDataLayerEvent,
 } from "./gtm";
@@ -145,6 +147,44 @@ describe("pushBeginCheckout", () => {
         currency: "USD",
         value: 39,
         interval: "yearly",
+      },
+    ]);
+  });
+});
+
+describe("purchaseDataLayerEvent", () => {
+  it("sends the monthly purchase value", () => {
+    expect(purchaseDataLayerEvent({ interval: "monthly", value: 4.99 })).toEqual({
+      event: "purchase",
+      currency: "USD",
+      value: 4.99,
+      interval: "monthly",
+    });
+  });
+
+  it("sends the yearly purchase value", () => {
+    expect(purchaseDataLayerEvent({ interval: "yearly", value: 39 })).toEqual({
+      event: "purchase",
+      currency: "USD",
+      value: 39,
+      interval: "yearly",
+    });
+  });
+});
+
+describe("pushPurchase", () => {
+  it("appends the purchase event to the GTM data layer", () => {
+    const dataLayer: Record<string, unknown>[] = [];
+    vi.stubGlobal("window", { dataLayer });
+
+    pushPurchase({ interval: "monthly", value: 4.99 });
+
+    expect(dataLayer).toEqual([
+      {
+        event: "purchase",
+        currency: "USD",
+        value: 4.99,
+        interval: "monthly",
       },
     ]);
   });

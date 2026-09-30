@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import { Roboto } from "next/font/google";
+import { PurchaseEventBeacon } from "@/components/PurchaseEventBeacon";
 import { PushMagicLinkLogin } from "@/components/PushMagicLinkLogin";
 import { SessionProvider } from "@/components/SessionProvider";
 import { VerifiedEventBeacon } from "@/components/VerifiedEventBeacon";
@@ -57,6 +58,7 @@ export default function RootLayout({
           `}
         </Script>
         <VerifiedEventBeacon />
+        <PurchaseEventBeacon />
         <PushMagicLinkLogin />
         <SessionProvider>{children}</SessionProvider>
       </body>

@@ -14,6 +14,12 @@ describe("better-auth schema compatibility", () => {
     expect(columns.verifiedEventPending.notNull).toBe(true);
     expect(columns.verifiedEventPending.hasDefault).toBe(true);
   });
+
+  it("queues one purchase event interval until the site sends it", () => {
+    const columns = getTableColumns(schema.user);
+    expect(columns.purchaseEventInterval).toBeDefined();
+    expect(columns.purchaseEventInterval.notNull).toBe(false);
+  });
 });
 
 describe("ATS usage schema", () => {
