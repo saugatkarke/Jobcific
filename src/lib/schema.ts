@@ -106,6 +106,8 @@ export const extensionRefreshToken = pgTable("extension_refresh_token", {
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   tokenHash: text("token_hash").notNull(),
+  /* Null for tokens issued before extensions were told apart. */
+  client: text("client"),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   revokedAt: timestamp("revoked_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull(),

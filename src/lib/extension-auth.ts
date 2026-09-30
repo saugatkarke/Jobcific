@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, gt, isNotNull, isNull, max } from "drizzle-orm";
 import { SignJWT, jwtVerify } from "jose";
 import { getDb } from "./db";
 import {
@@ -7,6 +7,11 @@ import {
   pkceS256Challenge,
   sha256Hex,
 } from "./crypto-hash";
+import {
+  extensionClientForRedirectUri,
+  isExtensionClient,
+  type ExtensionClient,
+} from "./extensions";
 import { extensionAuthCode, extensionRefreshToken, user } from "./schema";
 
 export class GrantError extends Error {
@@ -94,13 +99,18 @@ export async function insertAuthCode(args: {
   return raw;
 }
 
-async function issueTokens(userId: string, email: string): Promise<TokenResponse> {
+async function issueTokens(
+  userId: string,
+  email: string,
+  client: string | null,
+): Promise<TokenResponse> {
   const refresh = newSecret(32);
   const db = getDb();
   await db.insert(extensionRefreshToken).values({
     id: crypto.randomUUID(),
     userId,
     tokenHash: sha256Hex(refresh),
+    client,
     expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     revokedAt: null,
     createdAt: new Date(),
@@ -142,7 +152,11 @@ export async function exchangeAuthorizationCode(args: {
     .set({ consumedAt: new Date() })
     .where(eq(extensionAuthCode.id, row.id));
 
-  return issueTokens(owner.id, owner.email);
+  return issueTokens(
+    owner.id,
+    owner.email,
+    extensionClientForRedirectUri(args.redirectUri),
+  );
 }
 
 export async function rotateRefreshToken(refreshToken: string): Promise<TokenResponse> {
@@ -167,7 +181,33 @@ export async function rotateRefreshToken(refreshToken: string): Promise<TokenRes
     .set({ revokedAt: new Date() })
     .where(eq(extensionRefreshToken.id, row.id));
 
-  return issueTokens(owner.id, owner.email);
+  return issueTokens(owner.id, owner.email, row.client);
+}
+
+export async function listExtensionConnections(
+  userId: string,
+): Promise<{ client: ExtensionClient; lastSyncedAt: Date }[]> {
+  const db = getDb();
+  const rows = await db
+    .select({
+      client: extensionRefreshToken.client,
+      lastSyncedAt: max(extensionRefreshToken.createdAt),
+    })
+    .from(extensionRefreshToken)
+    .where(
+      and(
+        eq(extensionRefreshToken.userId, userId),
+        isNotNull(extensionRefreshToken.client),
+        isNull(extensionRefreshToken.revokedAt),
+        gt(extensionRefreshToken.expiresAt, new Date()),
+      ),
+    )
+    .groupBy(extensionRefreshToken.client);
+  return rows.flatMap((row) =>
+    isExtensionClient(row.client) && row.lastSyncedAt
+      ? [{ client: row.client, lastSyncedAt: row.lastSyncedAt }]
+      : [],
+  );
 }
 
 export async function revokeRefreshToken(refreshToken: string): Promise<void> {

@@ -11,6 +11,8 @@ import { GridBand } from "@/components/PageGrid";
 import type { AccountEntitlement } from "@/lib/account-entitlement";
 import { viewerAvatarUrl } from "@/lib/avatar";
 import { avatarColorForUrl } from "@/lib/avatar-render";
+import { listExtensionConnections } from "@/lib/extension-auth";
+import { syncedAgoLabel, type ExtensionConnection } from "@/lib/extensions";
 import { getOptionalSession } from "@/lib/session";
 import { entitlementForUser } from "@/lib/session-entitlement";
 import { headers } from "next/headers";
@@ -25,6 +27,7 @@ export default async function AccountPage({
   const { checkout, extension } = await searchParams;
   let viewer: AccountViewer | null = null;
   let initialEntitlement: AccountEntitlement | null = null;
+  let extensionConnections: ExtensionConnection[] = [];
   if (process.env.DATABASE_URL && process.env.BETTER_AUTH_SECRET) {
     const session = await getOptionalSession(await headers());
     if (!session?.user) redirect("/login?next=/account");
@@ -45,12 +48,24 @@ export default async function AccountPage({
     } catch {
       initialEntitlement = null;
     }
+    try {
+      const now = new Date();
+      extensionConnections = (
+        await listExtensionConnections(session.user.id)
+      ).map((connection) => ({
+        client: connection.client,
+        syncedLabel: syncedAgoLabel(connection.lastSyncedAt, now),
+      }));
+    } catch (error) {
+      console.error("Could not load extension connections", error);
+    }
   }
 
   return (
     <MarketingShell>
       <AccountProvider
         checkoutSuccess={checkout === "success"}
+        extensionConnections={extensionConnections}
         initialEntitlement={initialEntitlement}
         viewer={viewer}
       >

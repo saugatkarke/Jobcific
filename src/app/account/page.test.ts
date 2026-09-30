@@ -141,18 +141,28 @@ describe("account portal", () => {
 
   it("offers a Connect extension action through /extension/prepare", () => {
     expect(client).toContain("Connect extension");
+    expect(client).toContain("Reconnect extension");
     expect(client).toContain('const isFree = ent?.plan === "free";');
     expect(client).toContain('className={isFree ? "btn-secondary" : "btn-primary"}');
     expect(client).toMatch(
-      /\{ent\?\.plan === "pro" \? <ChromeMark \/> : null\}\s*Connect extension/,
+      /\{ent\?\.plan === "pro" \? <ChromeMark \/> : null\}\s*\{anyConnected \? "Reconnect extension" : "Connect extension"\}/,
     );
     expect(client).toContain('import { ChromeMark } from "./HeroInstallSplit";');
     expect(client).toContain("EXTENSION_CONNECT_HREF");
     expect(client).toMatch(
       /<PendingLink\s+href=\{EXTENSION_CONNECT_HREF\}\s+reloadDocument/,
     );
-    expect(client).toContain("SEEK_CWS_URL");
-    expect(client).toContain("INDEED_CWS_URL");
+  });
+
+  it("shows one connection status row per supported extension", () => {
+    expect(page).toContain("listExtensionConnections(session.user.id)");
+    expect(page).toContain("syncedAgoLabel(");
+    expect(page).toContain("extensionConnections={extensionConnections}");
+    expect(client).toContain("EXTENSIONS.map((ext)");
+    expect(client).toContain("Not connected yet");
+    expect(client).toContain("ext.cwsUrl");
+    expect(client).toContain("Get extension");
+    expect(client).not.toContain("Need the extension first?");
   });
 
   it("labels the Pro feature list as Core Features", () => {

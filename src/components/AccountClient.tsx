@@ -14,7 +14,7 @@ import {
   planStatusLabel,
   type AccountEntitlement,
 } from "@/lib/account-entitlement";
-import { INDEED_CWS_URL, SEEK_CWS_URL } from "@/lib/cws";
+import { EXTENSIONS, type ExtensionConnection } from "@/lib/extensions";
 import {
   EXTENSION_CONNECT_HREF,
   JOB_BOARD_LINKS,
@@ -51,12 +51,14 @@ export type AccountViewer = {
 
 type AccountState = {
   ent: AccountEntitlement | null;
+  extensionConnections: ExtensionConnection[];
   notice: string;
   viewer: AccountViewer | null;
 };
 
 const AccountContext = createContext<AccountState>({
   ent: null,
+  extensionConnections: [],
   notice: "",
   viewer: null,
 });
@@ -67,11 +69,13 @@ function useAccount() {
 
 export function AccountProvider({
   checkoutSuccess,
+  extensionConnections = [],
   initialEntitlement,
   viewer,
   children,
 }: {
   checkoutSuccess: boolean;
+  extensionConnections?: ExtensionConnection[];
   initialEntitlement: AccountEntitlement | null;
   viewer: AccountViewer | null;
   children: ReactNode;
@@ -114,7 +118,12 @@ export function AccountProvider({
 
   return (
     <AccountContext.Provider
-      value={{ ent, notice: checkoutNotice(checkoutSuccess, ent), viewer }}
+      value={{
+        ent,
+        extensionConnections,
+        notice: checkoutNotice(checkoutSuccess, ent),
+        viewer,
+      }}
     >
       {children}
     </AccountContext.Provider>
@@ -428,19 +437,58 @@ function AccountPlanCardSkeleton() {
 }
 
 export function AccountExtensionCard() {
-  const { ent } = useAccount();
+  const { ent, extensionConnections } = useAccount();
   const isFree = ent?.plan === "free";
+  const anyConnected = extensionConnections.length > 0;
 
   return (
     <DashboardCard title="Chrome extension">
       <p className="text-sm">
-        Connect this account so Pro status syncs into the Seek and Indeed
-        extensions.
+        Connect this account so Pro status syncs into your Jobcific
+        extensions. One click links every extension installed in this Chrome
+        profile.
       </p>
-      <p className="mt-2 text-sm text-[var(--muted)]">
-        Chrome opens a small window to finish the link. Then reopen the
-        extension popup.
-      </p>
+      <ul className="mt-4 divide-y divide-[var(--line)] rounded-2xl border border-[var(--line)]">
+        {EXTENSIONS.map((ext) => {
+          const connection = extensionConnections.find(
+            (item) => item.client === ext.client,
+          );
+          return (
+            <li
+              key={ext.client}
+              className="flex items-center justify-between gap-3 px-3 py-2.5 text-sm"
+            >
+              <span className="flex items-center gap-2.5 font-medium">
+                <span
+                  aria-hidden
+                  className={`h-2 w-2 rounded-full ${connection ? "bg-[var(--mint)]" : "bg-neutral-300"}`}
+                />
+                {ext.name}
+              </span>
+              {connection ? (
+                <span className="text-right">
+                  <span className="font-medium text-emerald-800">Connected</span>
+                  <span className="ml-2 text-[var(--muted)]">
+                    {connection.syncedLabel}
+                  </span>
+                </span>
+              ) : (
+                <span className="text-right text-[var(--muted)]">
+                  Not connected yet
+                  <a
+                    href={ext.cwsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ml-2 font-medium text-black hover:underline"
+                  >
+                    Get extension
+                  </a>
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
       <div className="mt-4">
         <PendingLink
           href={EXTENSION_CONNECT_HREF}
@@ -449,7 +497,7 @@ export function AccountExtensionCard() {
           pendingLabel="Connecting..."
         >
           {ent?.plan === "pro" ? <ChromeMark /> : null}
-          Connect extension
+          {anyConnected ? "Reconnect extension" : "Connect extension"}
         </PendingLink>
       </div>
       <p className="mt-5 text-sm text-[var(--muted)]">
@@ -470,26 +518,6 @@ export function AccountExtensionCard() {
           </li>
         ))}
       </ul>
-      <p className="mt-4 text-sm text-[var(--muted)]">
-        Need the extension first?{" "}
-        <a
-          href={SEEK_CWS_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-medium text-black hover:underline"
-        >
-          Install Seek
-        </a>
-        {" · "}
-        <a
-          href={INDEED_CWS_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-medium text-black hover:underline"
-        >
-          Install Indeed
-        </a>
-      </p>
     </DashboardCard>
   );
 }

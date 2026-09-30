@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { pkceS256Challenge } from "./crypto-hash";
 import { GrantError, assertCodeUsable, assertPkceMatch } from "./extension-auth";
@@ -38,5 +39,25 @@ describe("assertCodeUsable", () => {
         "https://evil.example/",
       ),
     ).toThrow(GrantError);
+  });
+});
+
+describe("extension client tracking", () => {
+  const src = readFileSync("src/lib/extension-auth.ts", "utf8");
+  const schema = readFileSync("src/lib/schema.ts", "utf8");
+
+  it("stores which extension each refresh token belongs to", () => {
+    expect(schema).toMatch(
+      /extensionRefreshToken = pgTable\([\s\S]{0,400}client: text\("client"\)/,
+    );
+    expect(src).toContain("extensionClientForRedirectUri(args.redirectUri)");
+    expect(src).toContain("issueTokens(owner.id, owner.email, row.client)");
+  });
+
+  it("lists active connections per extension for the account page", () => {
+    expect(src).toContain("export async function listExtensionConnections");
+    expect(src).toContain("isNull(extensionRefreshToken.revokedAt)");
+    expect(src).toContain("gt(extensionRefreshToken.expiresAt");
+    expect(src).toContain("groupBy(extensionRefreshToken.client)");
   });
 });
