@@ -4,6 +4,7 @@ import { MarketingShell } from "@/components/MarketingShell";
 import { GridBand } from "@/components/PageGrid";
 import { getAuth } from "@/lib/auth";
 import { isAllowedRedirectUri } from "@/lib/crypto-hash";
+import { markExtensionEventPending } from "@/lib/extension-event";
 import { insertAuthCode } from "@/lib/extension-auth";
 
 export const dynamic = "force-dynamic";
@@ -57,5 +58,10 @@ export default async function ExtensionConnectPage({
     redirectUri,
     state,
   });
+  try {
+    await markExtensionEventPending(session.user.id);
+  } catch (error) {
+    console.error("Could not record extension connect for analytics", error);
+  }
   redirect(`${redirectUri}?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`);
 }

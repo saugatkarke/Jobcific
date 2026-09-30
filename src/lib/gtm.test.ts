@@ -2,12 +2,14 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   beginCheckoutDataLayerEvent,
   emailVerifiedDataLayerEvent,
+  extensionConnectDataLayerEvent,
   loginDataLayerEvent,
   pushBeginCheckout,
   pushEmailVerified,
-  pushLogin,
+  pushExtensionConnect,
   pushPurchase,
   purchaseDataLayerEvent,
+  pushLogin,
   pushSignUp,
   signUpDataLayerEvent,
 } from "./gtm";
@@ -185,6 +187,31 @@ describe("pushPurchase", () => {
         currency: "USD",
         value: 4.99,
         interval: "monthly",
+      },
+    ]);
+  });
+});
+
+describe("extensionConnectDataLayerEvent", () => {
+  it("sends the extension connect event with the user id only", () => {
+    expect(extensionConnectDataLayerEvent("user-1")).toEqual({
+      event: "extension_connect",
+      user_id: "user-1",
+    });
+  });
+});
+
+describe("pushExtensionConnect", () => {
+  it("appends the extension connect event to the GTM data layer", () => {
+    const dataLayer: Record<string, unknown>[] = [];
+    vi.stubGlobal("window", { dataLayer });
+
+    pushExtensionConnect("user-1");
+
+    expect(dataLayer).toEqual([
+      {
+        event: "extension_connect",
+        user_id: "user-1",
       },
     ]);
   });

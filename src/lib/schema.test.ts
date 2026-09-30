@@ -20,6 +20,13 @@ describe("better-auth schema compatibility", () => {
     expect(columns.purchaseEventInterval).toBeDefined();
     expect(columns.purchaseEventInterval.notNull).toBe(false);
   });
+
+  it("queues one extension connect event until the site sends it", () => {
+    const columns = getTableColumns(schema.user);
+    expect(columns.extensionEventPending).toBeDefined();
+    expect(columns.extensionEventPending.notNull).toBe(true);
+    expect(columns.extensionEventPending.hasDefault).toBe(true);
+  });
 });
 
 describe("ATS usage schema", () => {

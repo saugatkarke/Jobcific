@@ -16,6 +16,9 @@ export const user = pgTable("user", {
     .notNull()
     .default(false),
   purchaseEventInterval: text("purchase_event_interval"),
+  extensionEventPending: boolean("extension_event_pending")
+    .notNull()
+    .default(false),
   image: text("image"),
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at").notNull(),

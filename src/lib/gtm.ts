@@ -95,6 +95,19 @@ export function pushPurchase(input: {
   window.dataLayer.push(purchaseDataLayerEvent(input));
 }
 
+export function extensionConnectDataLayerEvent(userId: string): DataLayerEvent {
+  return {
+    event: "extension_connect",
+    user_id: userId,
+  };
+}
+
+export function pushExtensionConnect(userId: string) {
+  if (typeof window === "undefined" || !userId) return;
+  window.dataLayer = window.dataLayer ?? [];
+  window.dataLayer.push(extensionConnectDataLayerEvent(userId));
+}
+
 export function pushLogin(
   input: { method: LoginMethod; userId?: string },
   onSent?: () => void,
