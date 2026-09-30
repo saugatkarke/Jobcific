@@ -444,6 +444,7 @@ export function AccountExtensionCard() {
       <div className="mt-4">
         <PendingLink
           href={EXTENSION_CONNECT_HREF}
+          reloadDocument
           className={isFree ? "btn-secondary" : "btn-primary"}
           pendingLabel="Connecting..."
         >

@@ -125,12 +125,15 @@ function opensInPlace(event: MouseEvent<HTMLAnchorElement>) {
 export function PendingLink({
   href,
   pendingLabel,
+  reloadDocument = false,
   onClick,
   children,
   ...props
 }: ComponentProps<typeof Link> & {
   href: string;
   pendingLabel?: string;
+  /** Chrome only injects extension content scripts on full document loads. */
+  reloadDocument?: boolean;
 }) {
   const pathname = usePathname();
   const [pending, setPending] = useState(false);
@@ -141,25 +144,40 @@ export function PendingLink({
   }, [pathname]);
   usePageShowReset(setPending);
 
-  return (
-    <Link
-      {...props}
-      href={href}
-      aria-busy={pending || undefined}
-      aria-disabled={pending || undefined}
-      onClick={(event) => {
-        onClick?.(event);
-        if (pending) {
-          event.preventDefault();
-          return;
-        }
-        if (event.defaultPrevented || !opensInPlace(event)) return;
-        if (targetPath === pathname) return;
-        setPending(true);
-      }}
-    >
+  const linkProps = {
+    href,
+    "aria-busy": pending || undefined,
+    "aria-disabled": pending || undefined,
+    onClick: (event: MouseEvent<HTMLAnchorElement>) => {
+      onClick?.(event);
+      if (pending) {
+        event.preventDefault();
+        return;
+      }
+      if (event.defaultPrevented || !opensInPlace(event)) return;
+      if (!reloadDocument && targetPath === pathname) return;
+      setPending(true);
+    },
+  };
+  const content = (
+    <>
       {pending ? <BtnSpinner /> : null}
       {pending && pendingLabel ? pendingLabel : children}
+    </>
+  );
+
+  if (reloadDocument) {
+    const { className, style, target, rel, id, title } = props;
+    return (
+      <a {...{ className, style, target, rel, id, title }} {...linkProps}>
+        {content}
+      </a>
+    );
+  }
+
+  return (
+    <Link {...props} {...linkProps}>
+      {content}
     </Link>
   );
 }

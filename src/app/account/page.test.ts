@@ -148,6 +148,9 @@ describe("account portal", () => {
     );
     expect(client).toContain('import { ChromeMark } from "./HeroInstallSplit";');
     expect(client).toContain("EXTENSION_CONNECT_HREF");
+    expect(client).toMatch(
+      /<PendingLink\s+href=\{EXTENSION_CONNECT_HREF\}\s+reloadDocument/,
+    );
     expect(client).toContain("SEEK_CWS_URL");
     expect(client).toContain("INDEED_CWS_URL");
   });
