@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  beginCheckoutDataLayerEvent,
   emailVerifiedDataLayerEvent,
   loginDataLayerEvent,
+  pushBeginCheckout,
   pushEmailVerified,
   pushLogin,
   pushSignUp,
@@ -103,6 +105,48 @@ describe("pushLogin", () => {
     });
     expect(onSent).toHaveBeenCalledOnce();
     vi.useRealTimers();
+  });
+});
+
+describe("beginCheckoutDataLayerEvent", () => {
+  it("sends the monthly price when checkout opens", () => {
+    expect(
+      beginCheckoutDataLayerEvent({ interval: "monthly", value: 4.99 }),
+    ).toEqual({
+      event: "begin_checkout",
+      currency: "USD",
+      value: 4.99,
+      interval: "monthly",
+    });
+  });
+
+  it("sends the yearly price when checkout opens", () => {
+    expect(
+      beginCheckoutDataLayerEvent({ interval: "yearly", value: 39 }),
+    ).toEqual({
+      event: "begin_checkout",
+      currency: "USD",
+      value: 39,
+      interval: "yearly",
+    });
+  });
+});
+
+describe("pushBeginCheckout", () => {
+  it("appends the checkout event to the GTM data layer", () => {
+    const dataLayer: Record<string, unknown>[] = [];
+    vi.stubGlobal("window", { dataLayer });
+
+    pushBeginCheckout({ interval: "yearly", value: 39 });
+
+    expect(dataLayer).toEqual([
+      {
+        event: "begin_checkout",
+        currency: "USD",
+        value: 39,
+        interval: "yearly",
+      },
+    ]);
   });
 });
 

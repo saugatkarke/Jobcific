@@ -18,6 +18,7 @@ import {
 } from "./icons";
 import { INDEED_CWS_URL, SEEK_CWS_URL } from "@/lib/cws";
 import { canStartSubscribe } from "@/lib/legal";
+import { pushBeginCheckout } from "@/lib/gtm";
 import { startPaddleCheckout } from "@/lib/paddle-checkout";
 import {
   MONTHLY_AMOUNT,
@@ -275,6 +276,12 @@ export function PricingCards({
     }
     setPending(true);
     const result = await startPaddleCheckout(priceId);
+    if (result.status === "ok") {
+      pushBeginCheckout({
+        interval,
+        value: interval === "monthly" ? MONTHLY_AMOUNT : YEARLY_AMOUNT,
+      });
+    }
     if (result.status === "login") {
       window.location.href = "/signup?next=/pricing";
       return;
