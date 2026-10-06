@@ -17,7 +17,7 @@ const roboto = Roboto({
 export const metadata: Metadata = {
   title: APP_NAME,
   description:
-    "Don't waste hours wondering if a resume is even worth it. See job data on Indeed and Seek, then score the fit before you rewrite.",
+    "Install the Jobcific extension to track Seek and Indeed jobs, reveal listing data, and check the ATS fit before you rewrite.",
   icons: {
     icon: [{ url: "/Jobcific-favicon.svg", type: "image/svg+xml" }],
   },

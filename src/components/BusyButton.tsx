@@ -12,31 +12,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { flushSync } from "react-dom";
 
-const SPINNER_TICKS = 30;
-const SPINNER_OUTER_RADIUS = 11.5;
-/* Must match the btn-spinner-shimmer duration in globals.css. */
-const SPINNER_SHIMMER_MS = 1600;
-const round = (n: number) => Math.round(n * 100) / 100;
+const SPINNER_SEGMENTS = 12;
+/* Must match the btn-spinner-segment duration in globals.css. */
+const SPINNER_CYCLE_MS = 1100;
 
-/* Tick i sits i steps counterclockwise from the head at 12 o'clock: hairlines at
-   9, thick at 6, tapering to dots around 3, then growing back into the head. */
-const spinnerTicks = Array.from({ length: SPINNER_TICKS }, (_, i) => {
-  const t = i / SPINNER_TICKS;
-  const scale = Math.min(1, Math.abs(t - 0.75) / 0.2);
-  const width = (0.3 + 1.2 * Math.abs(Math.cos(2 * Math.PI * t))) * scale;
-  const length = Math.max(0, 5.4 * scale - width);
-  const opacity = t > 0.75 ? 0.9 : 0.4 + 0.6 * Math.max(0, 1 - t / 0.08);
-  return {
-    angle: round((-360 * i) / SPINNER_TICKS),
-    y1: round(12 - SPINNER_OUTER_RADIUS + width / 2),
-    y2: round(12 - SPINNER_OUTER_RADIUS + width / 2 + length),
-    width: round(width),
-    style: {
-      "--tick-opacity": round(opacity),
-      animationDelay: `${Math.round(-(1 - t) * SPINNER_SHIMMER_MS)}ms`,
-    } as CSSProperties,
-  };
-}).filter((tick) => tick.width > 0.05);
+/* Segment i sits i steps clockwise from 12 o'clock and lights up i steps later,
+   so the flare travels clockwise. Each segment is 180deg symmetric, which lets
+   its own half-turn loop seamlessly. */
+const spinnerSegments = Array.from({ length: SPINNER_SEGMENTS }, (_, i) => ({
+  angle: (360 * i) / SPINNER_SEGMENTS,
+  style: {
+    animationDelay: `${Math.round(((i - SPINNER_SEGMENTS) / SPINNER_SEGMENTS) * SPINNER_CYCLE_MS)}ms`,
+  } as CSSProperties,
+}));
 
 export function BtnSpinner({ size }: { size?: string }) {
   return (
@@ -46,20 +34,19 @@ export function BtnSpinner({ size }: { size?: string }) {
       style={size ? { width: size, height: size } : undefined}
       aria-hidden
     >
-      {spinnerTicks.map((tick) => (
-        <line
-          key={tick.angle}
-          className="btn-spinner-tick"
-          style={tick.style}
-          x1="12"
-          x2="12"
-          y1={tick.y1}
-          y2={tick.y2}
-          stroke="currentColor"
-          strokeWidth={tick.width}
-          strokeLinecap="round"
-          transform={`rotate(${tick.angle} 12 12)`}
-        />
+      {spinnerSegments.map((segment) => (
+        <g key={segment.angle} transform={`rotate(${segment.angle} 12 12)`}>
+          <rect
+            className="btn-spinner-segment"
+            style={segment.style}
+            x="11"
+            y="1.5"
+            width="2"
+            height="4.2"
+            rx="1"
+            fill="currentColor"
+          />
+        </g>
       ))}
     </svg>
   );
