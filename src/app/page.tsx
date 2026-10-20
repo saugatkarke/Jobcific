@@ -31,9 +31,7 @@ export default function HomePage() {
         <MeshHero>
           <div className="mx-auto max-w-5xl px-5 pb-16 pt-16 text-center md:px-6 md:pb-20">
             <h1 className="hero-enter hero-enter-2 text-4xl font-bold tracking-tight md:text-6xl">
-              Built for <span className="italic">serious job</span> searches
-              <br />
-              on Indeed and Seek.
+              "Built for serious job searches on Indeed and Seek."
             </h1>
             <p className="hero-enter hero-enter-3 mx-auto mt-5 max-w-xl text-[var(--muted)]">
               The salary is buried. The publish date is buried.
