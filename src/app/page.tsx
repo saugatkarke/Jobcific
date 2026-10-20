@@ -23,7 +23,7 @@ export default function HomePage() {
         <MeshHero>
           <div className="mx-auto max-w-3xl px-5 pb-16 pt-16 text-center md:px-6 md:pb-20">
             <h1 className="hero-enter hero-enter-2 text-4xl font-bold tracking-tight md:text-6xl">
-              “Tailor every resume” <br/> is the advice that’s burning your weekends.
+              Built for serious job searches on Indeed and Seek.
             </h1>
             <p className="hero-enter hero-enter-3 mx-auto mt-5 max-w-xl text-[var(--muted)]">
               Jobcific shows you the listing data first, scores the fit second,
