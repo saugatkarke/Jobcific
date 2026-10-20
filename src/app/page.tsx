@@ -32,7 +32,7 @@ export default function HomePage() {
             </p>
             <div className="hero-enter hero-enter-4 mt-8 flex flex-wrap justify-center gap-3">
               <Link href="/pricing" className="btn-primary">
-                Get Pro
+                Get Premium
               </Link>
               <HeroInstallSplit
                 seekUrl={SEEK_CWS_URL}
