@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
+import { Caveat } from "next/font/google";
 import { PendingLink } from "@/components/BusyButton";
+import { ProBorderSpin } from "@/components/ProBorderSpin";
 import { FaqAccordion } from "@/components/FaqAccordion";
 import { FeatureBento } from "@/components/FeatureBento";
 import {
@@ -16,33 +18,72 @@ import { Reveal } from "@/components/Reveal";
 import { SupportedMarkets } from "@/components/SupportedMarkets";
 import { INDEED_CWS_URL, SEEK_CWS_URL } from "@/lib/cws";
 
+const noteFont = Caveat({
+  subsets: ["latin"],
+  weight: "500",
+});
+
 export default function HomePage() {
   return (
     <MarketingShell>
+      <ProBorderSpin />
       <GridBand as="section" className="border-b border-[var(--line)]">
         <MeshHero>
-          <div className="mx-auto max-w-3xl px-5 pb-16 pt-16 text-center md:px-6 md:pb-20">
+          <div className="mx-auto max-w-5xl px-5 pb-16 pt-16 text-center md:px-6 md:pb-20">
             <h1 className="hero-enter hero-enter-2 text-4xl font-bold tracking-tight md:text-6xl">
-              “Tailor every resume” <br /> is the advice that’s burning your
-              weekends.
+              Built for <span className="italic">serious job</span> searches
+              <br />
+              on Indeed and Seek.
             </h1>
             <p className="hero-enter hero-enter-3 mx-auto mt-5 max-w-xl text-[var(--muted)]">
-              Jobcific shows you the listing data first, scores the fit second,
-              and only then do you rewrite. Stop treating every posting like it
-              deserves a custom resume. Most of them don&apos;t.
+              The salary is buried. The publish date is buried.
             </p>
-            <div className="hero-enter hero-enter-4 mt-8 flex flex-wrap justify-center gap-3">
-              <PendingLink
-                href="/pricing"
-                className="btn-primary"
-                pendingLabel="Getting Pro..."
-              >
-                Get Pro
-              </PendingLink>
-              <HeroInstallSplit
-                seekUrl={SEEK_CWS_URL}
-                indeedUrl={INDEED_CWS_URL}
-              />
+            <p className="hero-enter hero-enter-3 mx-auto mt-3 max-w-xl italic text-[var(--muted)]">
+              Jobcific reveals both, plus how many people already applied and
+              how your resume scores.
+            </p>
+            <div className="hero-cta hero-enter hero-enter-4 mt-8">
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <PendingLink
+                  href="/pricing"
+                  className="btn-primary btn-pro gap-1.5"
+                  pendingLabel="Getting Pro..."
+                >
+                  <ProCrystal />
+                  Get Pro
+                </PendingLink>
+                <div className="hero-install-anchor">
+                  <HeroInstallSplit
+                    seekUrl={SEEK_CWS_URL}
+                    indeedUrl={INDEED_CWS_URL}
+                  />
+                  <div className="hero-nosignup-callout">
+                    <svg
+                      className="hero-nosignup-arrow"
+                      viewBox="0 0 160 70"
+                      fill="none"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M148 16C108 52 26 62 26 30"
+                        stroke="currentColor"
+                        strokeWidth="1.7"
+                        strokeLinecap="round"
+                      />
+                      <path
+                        d="M19.3 38.1L26 28L32.7 38.1"
+                        stroke="currentColor"
+                        strokeWidth="1.7"
+                        strokeLinecap="round"
+                        strokeLinejoin="miter"
+                      />
+                    </svg>
+                    <p className={`hero-nosignup ${noteFont.className}`}>
+                      No sign up needed
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </MeshHero>
@@ -125,9 +166,10 @@ export default function HomePage() {
             actions={
               <PendingLink
                 href="/pricing"
-                className="btn-primary"
+                className="btn-primary btn-pro gap-1.5"
                 pendingLabel="Getting Pro..."
               >
+                <ProCrystal />
                 Get Pro
               </PendingLink>
             }
@@ -160,9 +202,10 @@ export default function HomePage() {
           <div className="mt-8 flex flex-wrap gap-3">
             <PendingLink
               href="/pricing"
-              className="btn-primary"
+              className="btn-primary btn-pro gap-1.5"
               pendingLabel="Getting Pro..."
             >
+              <ProCrystal />
               Get Pro
             </PendingLink>
             <PendingLink
@@ -176,6 +219,19 @@ export default function HomePage() {
         </div>
       </GridBand>
     </MarketingShell>
+  );
+}
+
+function ProCrystal() {
+  return (
+    <img
+      src="/pro-crystal.png"
+      alt=""
+      width={145}
+      height={256}
+      draggable={false}
+      className="pro-cta-crystal"
+    />
   );
 }
 

@@ -152,8 +152,12 @@ body {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background:
-    radial-gradient(ellipse at 50% 28%, #5a616a 0%, #1f242b 52%, #0c0e12 100%);
+  background: radial-gradient(
+    ellipse at 50% 28%,
+    #5a616a 0%,
+    #1f242b 52%,
+    #0c0e12 100%
+  );
   box-shadow:
     0 0.5px 0 0.5px #d2d7de,
     inset 0 2px 3px rgba(0, 0, 0, 0.8);
@@ -471,7 +475,8 @@ body {
 }
 
 @keyframes text-gradient-wave {
-  0%, 100% {
+  0%,
+  100% {
     --tg-shift: 0;
     background-position: 0% 50%;
   }
@@ -635,7 +640,11 @@ body {
   opacity: 0.5;
   background:
     radial-gradient(30% 110% at 30% 100%, var(--plan-glow-a), transparent 85%),
-    radial-gradient(34% 110% at 70% 100%, rgba(255, 255, 255, 0.9), transparent 85%),
+    radial-gradient(
+      34% 110% at 70% 100%,
+      rgba(255, 255, 255, 0.9),
+      transparent 85%
+    ),
     radial-gradient(30% 110% at 95% 100%, var(--plan-glow-b), transparent 85%);
   -webkit-mask-image: var(--plan-wave-b);
   mask-image: var(--plan-wave-b);
@@ -649,7 +658,11 @@ body {
 .plan-aurora-wave-3 {
   height: 62%;
   background:
-    radial-gradient(40% 120% at 50% 100%, rgba(255, 255, 255, 1), transparent 70%),
+    radial-gradient(
+      40% 120% at 50% 100%,
+      rgba(255, 255, 255, 1),
+      transparent 70%
+    ),
     radial-gradient(30% 110% at 10% 100%, var(--plan-glow-a), transparent 70%),
     radial-gradient(30% 110% at 92% 100%, var(--plan-glow-b), transparent 70%);
   -webkit-mask-image: var(--plan-wave-c);
@@ -823,7 +836,8 @@ body {
     pointer-events: none;
   }
 
-  :is(.plan-card-pro, .plan-card-free):is(:hover, :focus-within) .plan-card-signout {
+  :is(.plan-card-pro, .plan-card-free):is(:hover, :focus-within)
+    .plan-card-signout {
     opacity: 1;
     pointer-events: auto;
   }
@@ -921,7 +935,6 @@ body {
   text-shadow: 0 1px 12px rgba(0, 0, 0, 0.45);
 }
 
-
 .mesh-cta {
   background:
     radial-gradient(
@@ -947,6 +960,56 @@ body {
 
 .btn-primary {
   @apply inline-flex items-center justify-center rounded-[50px] bg-black px-4 py-2.5 text-sm font-medium text-white hover:bg-neutral-800;
+}
+
+.pro-cta-crystal {
+  height: 1.35rem;
+  width: auto;
+  flex: none;
+  pointer-events: none;
+  user-select: none;
+}
+
+@property --pro-border-angle {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+
+.btn-pro {
+  position: relative;
+  --pro-border-angle: 0;
+}
+
+.btn-pro::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: conic-gradient(
+    from calc(var(--pro-border-angle) * 1deg),
+    #ffffff 0%,
+    #ffffff 7%,
+    #fd5e0b 16%,
+    #fd8a0b 26%,
+    #d39a3e 36%,
+    #b2dde5 50%,
+    #d39a3e 64%,
+    #fd8a0b 74%,
+    #fd5e0b 84%,
+    #ffffff 93%,
+    #ffffff 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
 }
 
 .btn-secondary {
@@ -1133,6 +1196,81 @@ a[aria-busy="true"] {
 .hero-install.is-open .hero-install-origin {
   opacity: 0;
   pointer-events: none;
+}
+
+.hero-cta {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: fit-content;
+  margin-inline: auto;
+}
+
+.hero-cta .btn-primary,
+.hero-cta .btn-secondary {
+  min-height: 2.94rem;
+  padding: 0.63rem 1.302rem;
+  font-size: 0.945rem;
+  line-height: 1.2;
+}
+
+.hero-cta .pro-cta-crystal {
+  height: 1.428rem;
+}
+
+.hero-cta .hero-install img {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.hero-install-anchor {
+  position: relative;
+}
+
+.hero-nosignup {
+  position: absolute;
+  left: calc(100% + 0.85rem);
+  top: 0.75rem;
+  margin: 0;
+  color: var(--muted);
+  font-size: 1.375rem;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.hero-nosignup-arrow {
+  position: absolute;
+  left: 34%;
+  top: calc(100% - 1.2rem);
+  width: 7.6rem;
+  height: 3.7rem;
+  overflow: visible;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.hero-cta:has(.hero-install.is-open) .hero-nosignup,
+.hero-cta:has(.hero-install.is-open) .hero-nosignup-arrow {
+  visibility: hidden;
+}
+
+@media (max-width: 720px) {
+  .hero-cta {
+    margin-right: 6.5rem;
+  }
+
+  .hero-nosignup {
+    font-size: 1.15rem;
+    left: calc(100% + 0.4rem);
+  }
+
+  .hero-nosignup-arrow {
+    width: 6.4rem;
+    height: 3.1rem;
+  }
 }
 
 .hero-install-choice {
@@ -1426,19 +1564,27 @@ a[aria-busy="true"] {
     transform: rotate(0deg) scale(1);
   }
 
-  .header-rating:hover .header-rating-star-cell:nth-child(2) .header-rating-star {
+  .header-rating:hover
+    .header-rating-star-cell:nth-child(2)
+    .header-rating-star {
     transition-delay: 0.58s;
   }
 
-  .header-rating:hover .header-rating-star-cell:nth-child(3) .header-rating-star {
+  .header-rating:hover
+    .header-rating-star-cell:nth-child(3)
+    .header-rating-star {
     transition-delay: 0.66s;
   }
 
-  .header-rating:hover .header-rating-star-cell:nth-child(4) .header-rating-star {
+  .header-rating:hover
+    .header-rating-star-cell:nth-child(4)
+    .header-rating-star {
     transition-delay: 0.74s;
   }
 
-  .header-rating:hover .header-rating-star-cell:nth-child(5) .header-rating-star {
+  .header-rating:hover
+    .header-rating-star-cell:nth-child(5)
+    .header-rating-star {
     transition-delay: 0.82s;
   }
 }
@@ -2537,16 +2683,14 @@ a[aria-busy="true"] {
   background:
     radial-gradient(circle at 18% 22%, #ff8aa0 0%, transparent 42%),
     radial-gradient(circle at 86% 18%, #ffc08a 0%, transparent 46%),
-    radial-gradient(circle at 48% 78%, #d9b4ff 0%, transparent 44%),
-    #ffe8df;
+    radial-gradient(circle at 48% 78%, #d9b4ff 0%, transparent 44%), #ffe8df;
 }
 
 .pricing-card-head-pro::before {
   background:
     radial-gradient(circle at 16% 20%, #20fc8f 0%, transparent 42%),
     radial-gradient(circle at 88% 16%, #7ad7ff 0%, transparent 46%),
-    radial-gradient(circle at 52% 82%, #b8ffd4 0%, transparent 44%),
-    #e9fff4;
+    radial-gradient(circle at 52% 82%, #b8ffd4 0%, transparent 44%), #e9fff4;
 }
 
 .pricing-card-head::after {
