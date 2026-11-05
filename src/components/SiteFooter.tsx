@@ -17,6 +17,25 @@ export function SiteFooter() {
           Track Indeed and Seek applications locally. Upgrade here for Hide jobs
           and ATS results.
         </p>
+        <div className="mt-4">
+          {/* Launchpadly: Jobcific (light) */}
+          <a
+            href="https://launchpadly.co/startup/jobcific?ref=badge"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-launchpadly-badge="jobcific"
+            data-launchpadly-badge-variant="light"
+            className="inline-block"
+          >
+            <img
+              src="https://launchpadly.co/embed/badges/startup/jobcific.svg?variant=light"
+              alt="Launchpadly Startup Directory"
+              width={220}
+              height={48}
+              style={{ display: "block", border: 0 }}
+            />
+          </a>
+        </div>
       </div>
       <div className="col-span-6 border-t border-[var(--line)] px-4 py-10 md:col-span-3 md:border-t-0 md:border-l">
         <p className="text-sm font-medium">Product</p>
