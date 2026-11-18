@@ -1,6 +1,6 @@
 import { INDEED_CWS_URL, SEEK_CWS_URL } from "./cws";
 
-export type ExtensionClient = "seek" | "indeed";
+export type ExtensionClient = "seek" | "indeed" | "linkedin";
 
 export type ExtensionConnection = {
   client: ExtensionClient;
@@ -12,7 +12,8 @@ type ExtensionInfo = {
   name: string;
   /* Chrome Web Store ID first, then the unpacked development ID. */
   ids: readonly string[];
-  cwsUrl: string;
+  /* null until the extension is published on the Chrome Web Store. */
+  cwsUrl: string | null;
 };
 
 export const EXTENSIONS: readonly ExtensionInfo[] = [
@@ -27,6 +28,12 @@ export const EXTENSIONS: readonly ExtensionInfo[] = [
     name: "Indeed",
     ids: ["lhkokphioeoagcpblnlidbehgpcbpgho", "mamnkbcandbeclhpambinlemkfggkcok"],
     cwsUrl: INDEED_CWS_URL,
+  },
+  {
+    client: "linkedin",
+    name: "LinkedIn",
+    ids: ["gefachkggkhiiolgngplghiemhfbbjae"],
+    cwsUrl: null,
   },
 ];
 

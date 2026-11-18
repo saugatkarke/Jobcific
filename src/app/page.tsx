@@ -59,7 +59,27 @@ export default function HomePage() {
                   />
                   <div className="hero-nosignup-callout">
                     <svg
-                      className="hero-nosignup-arrow"
+                      className="hero-nosignup-arrow hero-nosignup-arrow-mobile"
+                      viewBox="0 0 60 40"
+                      fill="none"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M54 32C30 34 12 26 10 6"
+                        stroke="currentColor"
+                        strokeWidth="1.7"
+                        strokeLinecap="round"
+                      />
+                      <path
+                        d="M4.5 12L10 4L15.5 12"
+                        stroke="currentColor"
+                        strokeWidth="1.7"
+                        strokeLinecap="round"
+                        strokeLinejoin="miter"
+                      />
+                    </svg>
+                    <svg
+                      className="hero-nosignup-arrow hero-nosignup-arrow-desktop"
                       viewBox="0 0 160 70"
                       fill="none"
                       aria-hidden="true"

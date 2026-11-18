@@ -2,15 +2,21 @@ import { describe, expect, it } from "vitest";
 import {
   EXTENSIONS,
   extensionClientForRedirectUri,
+  isExtensionClient,
   syncedAgoLabel,
 } from "./extensions";
 import { INDEED_CWS_URL, SEEK_CWS_URL } from "./cws";
 
 describe("extension registry", () => {
-  it("lists Seek and Indeed with their store links", () => {
-    expect(EXTENSIONS.map((ext) => ext.client)).toEqual(["seek", "indeed"]);
+  it("lists Seek, Indeed and LinkedIn with their store links", () => {
+    expect(EXTENSIONS.map((ext) => ext.client)).toEqual(["seek", "indeed", "linkedin"]);
     expect(EXTENSIONS[0].cwsUrl).toBe(SEEK_CWS_URL);
     expect(EXTENSIONS[1].cwsUrl).toBe(INDEED_CWS_URL);
+    expect(EXTENSIONS[2].cwsUrl).toBeNull();
+  });
+
+  it("treats linkedin as a known extension client", () => {
+    expect(isExtensionClient("linkedin")).toBe(true);
   });
 
   it("maps store and unpacked redirect URIs to their extension", () => {
@@ -26,6 +32,9 @@ describe("extension registry", () => {
     expect(
       extensionClientForRedirectUri("https://mamnkbcandbeclhpambinlemkfggkcok.chromiumapp.org/"),
     ).toBe("indeed");
+    expect(
+      extensionClientForRedirectUri("https://gefachkggkhiiolgngplghiemhfbbjae.chromiumapp.org/"),
+    ).toBe("linkedin");
   });
 
   it("returns null for unknown or malformed redirect URIs", () => {

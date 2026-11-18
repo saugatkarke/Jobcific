@@ -453,6 +453,7 @@ export function AccountExtensionCard() {
           const connection = extensionConnections.find(
             (item) => item.client === ext.client,
           );
+          if (!connection && !ext.cwsUrl) return null;
           return (
             <li
               key={ext.client}
@@ -478,14 +479,16 @@ export function AccountExtensionCard() {
               ) : (
                 <span className="text-right text-[var(--muted)]">
                   Not connected yet
-                  <a
-                    href={ext.cwsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="ml-2 font-medium text-black hover:underline"
-                  >
-                    Get extension
-                  </a>
+                  {ext.cwsUrl ? (
+                    <a
+                      href={ext.cwsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-2 font-medium text-black hover:underline"
+                    >
+                      Get extension
+                    </a>
+                  ) : null}
                 </span>
               )}
             </li>
