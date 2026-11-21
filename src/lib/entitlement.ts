@@ -1,3 +1,5 @@
+import type { ExtensionClient } from "./extensions";
+
 export type Entitlement = {
   plan: "pro" | "free";
   status: string;
@@ -58,3 +60,21 @@ export function resolveEntitlement(
     features: { hideJobs: plan === "pro", atsResults: plan === "pro" },
   };
 }
+
+const LEGACY_EXTENSIONS: readonly ExtensionClient[] = ["seek", "indeed"];
+
+/* Every Pro subscription today is the legacy plan covering Seek and Indeed. */
+export function entitledExtensions(resolved: Entitlement): ExtensionClient[] {
+  return resolved.plan === "pro" ? [...LEGACY_EXTENSIONS] : [];
+}
+
+/* A null client is a token from before extensions were told apart, so Seek or Indeed. */
+export function isClientEntitled(
+  client: ExtensionClient | null,
+  extensions: readonly ExtensionClient[],
+): boolean {
+  if (client) return extensions.includes(client);
+  return LEGACY_EXTENSIONS.every((ext) => extensions.includes(ext));
+}
+
+export const EXTENSION_NOT_INCLUDED = "extension_not_included";

@@ -50,26 +50,39 @@ export function assertCodeUsable(row: {
   if (row.redirectUri !== redirectUri) throw new GrantError();
 }
 
-export async function signAccessJwt(owner: {
-  id: string;
+export type AccessClaims = {
+  sub: string;
   email: string;
-}): Promise<string> {
-  return new SignJWT({ email: owner.email, typ: "extension" })
+  /* Null for tokens issued before extensions were told apart. */
+  client: ExtensionClient | null;
+};
+
+export async function signAccessJwt(
+  owner: { id: string; email: string },
+  client: string | null = null,
+): Promise<string> {
+  return new SignJWT({
+    email: owner.email,
+    typ: "extension",
+    ...(isExtensionClient(client) ? { client } : {}),
+  })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(owner.id)
     .setExpirationTime("15m")
     .sign(secretKey());
 }
 
-export async function verifyAccessJwt(
-  token: string,
-): Promise<{ sub: string; email: string } | null> {
+export async function verifyAccessJwt(token: string): Promise<AccessClaims | null> {
   try {
     const { payload } = await jwtVerify(token, secretKey());
     if (payload.typ !== "extension" || !payload.sub || !payload.email) {
       return null;
     }
-    return { sub: String(payload.sub), email: String(payload.email) };
+    return {
+      sub: String(payload.sub),
+      email: String(payload.email),
+      client: isExtensionClient(payload.client) ? payload.client : null,
+    };
   } catch {
     return null;
   }
@@ -116,7 +129,7 @@ async function issueTokens(
     createdAt: new Date(),
   });
   return {
-    access_token: await signAccessJwt({ id: userId, email }),
+    access_token: await signAccessJwt({ id: userId, email }, client),
     refresh_token: refresh,
     token_type: "Bearer",
     expires_in: 900,

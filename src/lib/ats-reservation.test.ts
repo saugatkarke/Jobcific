@@ -69,6 +69,43 @@ describe("ATS reservation tickets", () => {
     );
   });
 
+  it("binds the ticket to the extension that reserved it", async () => {
+    const token = await signAtsReservation({
+      userId: "user_123",
+      jobId: "seek-123",
+      client: "seek",
+      now: NOW,
+    });
+    expect(decodeJwt(token).client).toBe("seek");
+    const expected = { userId: "user_123", jobId: "seek-123", now: NOW };
+    await expect(
+      verifyAtsReservation(token, { ...expected, client: "seek" }),
+    ).resolves.toMatchObject({ reservationId: expect.any(String) });
+    await expect(
+      verifyAtsReservation(token, { ...expected, client: "linkedin" }),
+    ).rejects.toThrow("RESERVATION_INVALID");
+    await expect(verifyAtsReservation(token, expected)).rejects.toThrow(
+      "RESERVATION_INVALID",
+    );
+  });
+
+  it("accepts a ticket issued before the client claim existed", async () => {
+    const token = await signAtsReservation({
+      userId: "user_123",
+      jobId: "seek-123",
+      now: NOW,
+    });
+    expect(decodeJwt(token)).not.toHaveProperty("client");
+    await expect(
+      verifyAtsReservation(token, {
+        userId: "user_123",
+        jobId: "seek-123",
+        client: "linkedin",
+        now: NOW,
+      }),
+    ).resolves.toMatchObject({ jobId: "seek-123" });
+  });
+
   it("normalizes bad signatures and missing configuration", async () => {
     await expect(
       verifyAtsReservation("not-a-jwt", {

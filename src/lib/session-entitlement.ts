@@ -2,15 +2,21 @@ import { desc, eq } from "drizzle-orm";
 import { NextRequest } from "next/server";
 import { getAuth } from "./auth";
 import { getDb } from "./db";
-import { emptyEntitlement, resolveEntitlement } from "./entitlement";
-import { verifyAccessJwt } from "./extension-auth";
+import {
+  EXTENSION_NOT_INCLUDED,
+  emptyEntitlement,
+  entitledExtensions,
+  isClientEntitled,
+  resolveEntitlement,
+} from "./entitlement";
+import { verifyAccessJwt, type AccessClaims } from "./extension-auth";
 import { intervalFromPriceId, type BillingInterval } from "./pricing";
 import { subscription } from "./schema";
 import { getOptionalSession } from "./session";
 
 export async function extensionClaimsFromRequest(source: {
   headers: Headers;
-}): Promise<{ sub: string; email: string } | null> {
+}): Promise<AccessClaims | null> {
   const header = source.headers.get("authorization") || "";
   const match = header.match(/^Bearer\s+(.+)$/i);
   if (!match) return null;
@@ -82,10 +88,19 @@ export async function entitlementPayload(req: NextRequest) {
       email: null,
       ...emptyEntitlement(),
       interval: null,
+      extensions: [],
     };
   }
 
-  return entitlementForUser(userId, email);
+  const account = await entitlementForUser(userId, email);
+  if (!claims || account.plan !== "pro") return account;
+  if (isClientEntitled(claims.client, account.extensions)) return account;
+  return {
+    ...account,
+    plan: "free" as const,
+    features: emptyEntitlement().features,
+    reason: EXTENSION_NOT_INCLUDED,
+  };
 }
 
 export async function entitlementForUser(userId: string, email: string | null) {
@@ -95,6 +110,7 @@ export async function entitlementForUser(userId: string, email: string | null) {
       email,
       ...emptyEntitlement(),
       interval: null,
+      extensions: [],
     };
   }
 
@@ -113,5 +129,6 @@ export async function entitlementForUser(userId: string, email: string | null) {
     email,
     ...resolved,
     interval: proBillingIntervalFromRow(row),
+    extensions: entitledExtensions(resolved),
   };
 }

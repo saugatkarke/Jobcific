@@ -74,6 +74,7 @@ export async function POST(req: NextRequest) {
     const reservation = await verifyAtsReservation(reservationToken, {
       userId: claims.sub,
       jobId: String(input.jobId || ""),
+      ...(claims.client ? { client: claims.client } : {}),
     });
     const claimed = await claimAtsReservationUse({
       reservationId: reservation.reservationId,

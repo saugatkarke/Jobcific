@@ -1,4 +1,5 @@
 import { SignJWT, jwtVerify } from "jose";
+import type { ExtensionClient } from "./extensions";
 
 const RESERVATION_TYPE = "ats-reservation";
 const RESERVATION_TTL_SECONDS = 300;
@@ -16,6 +17,7 @@ function unixSeconds(value: Date): number {
 export async function signAtsReservation(input: {
   userId: string;
   jobId: string;
+  client?: ExtensionClient | null;
   reservationId?: string;
   now?: Date;
 }): Promise<string> {
@@ -24,7 +26,11 @@ export async function signAtsReservation(input: {
     const jobId = String(input.jobId || "").trim();
     if (!userId || !jobId) throw new Error("RESERVATION_INVALID");
     const issuedAt = unixSeconds(input.now ?? new Date());
-    return await new SignJWT({ typ: RESERVATION_TYPE, jobId })
+    return await new SignJWT({
+      typ: RESERVATION_TYPE,
+      jobId,
+      ...(input.client ? { client: input.client } : {}),
+    })
       .setProtectedHeader({ alg: "HS256" })
       .setSubject(userId)
       .setJti(input.reservationId || crypto.randomUUID())
@@ -38,7 +44,12 @@ export async function signAtsReservation(input: {
 
 export async function verifyAtsReservation(
   token: string,
-  expected: { userId: string; jobId: string; now?: Date },
+  expected: {
+    userId: string;
+    jobId: string;
+    client?: ExtensionClient | null;
+    now?: Date;
+  },
 ): Promise<{ reservationId: string; userId: string; jobId: string }> {
   try {
     const { payload } = await jwtVerify(
@@ -51,11 +62,15 @@ export async function verifyAtsReservation(
     const userId = String(payload.sub || "");
     const jobId = String(payload.jobId || "");
     const reservationId = String(payload.jti || "");
+    /* Reservations signed before the client claim existed carry none. */
+    const clientMismatch =
+      payload.client !== undefined && payload.client !== (expected.client ?? null);
     if (
       payload.typ !== RESERVATION_TYPE ||
       !reservationId ||
       userId !== expected.userId ||
-      jobId !== expected.jobId
+      jobId !== expected.jobId ||
+      clientMismatch
     ) {
       throw new Error("RESERVATION_INVALID");
     }

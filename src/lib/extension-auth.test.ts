@@ -1,7 +1,56 @@
 import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { SignJWT, decodeJwt } from "jose";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { pkceS256Challenge } from "./crypto-hash";
-import { GrantError, assertCodeUsable, assertPkceMatch } from "./extension-auth";
+import {
+  GrantError,
+  assertCodeUsable,
+  assertPkceMatch,
+  signAccessJwt,
+  verifyAccessJwt,
+} from "./extension-auth";
+
+describe("access token client claim", () => {
+  const secret = "test-secret-at-least-32-characters";
+  const owner = { id: "user_123", email: "x@example.com" };
+
+  beforeEach(() => {
+    process.env.BETTER_AUTH_SECRET = secret;
+  });
+
+  afterEach(() => {
+    delete process.env.BETTER_AUTH_SECRET;
+  });
+
+  it("carries the extension that signed in", async () => {
+    const token = await signAccessJwt(owner, "linkedin");
+    expect(decodeJwt(token).client).toBe("linkedin");
+    await expect(verifyAccessJwt(token)).resolves.toEqual({
+      sub: "user_123",
+      email: "x@example.com",
+      client: "linkedin",
+    });
+  });
+
+  it("omits the claim for a legacy token", async () => {
+    const token = await signAccessJwt(owner, null);
+    expect(decodeJwt(token)).not.toHaveProperty("client");
+    await expect(verifyAccessJwt(token)).resolves.toMatchObject({ client: null });
+  });
+
+  it("treats an unknown client claim as legacy", async () => {
+    const token = await new SignJWT({
+      email: owner.email,
+      typ: "extension",
+      client: "glassdoor",
+    })
+      .setProtectedHeader({ alg: "HS256" })
+      .setSubject(owner.id)
+      .setExpirationTime("15m")
+      .sign(new TextEncoder().encode(secret));
+    await expect(verifyAccessJwt(token)).resolves.toMatchObject({ client: null });
+  });
+});
 
 describe("assertPkceMatch", () => {
   it("accepts a matching verifier", () => {

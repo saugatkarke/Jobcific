@@ -69,7 +69,7 @@ describe("POST /api/extension/ats-reservation", () => {
   });
 
   it("requires an active Pro subscription", async () => {
-    claimsMock.mockResolvedValueOnce({ sub: "user_123", email: "x@example.com" });
+    claimsMock.mockResolvedValueOnce({ sub: "user_123", email: "x@example.com", client: null });
     subscriptionMock.mockResolvedValueOnce({
       ...proRow(),
       status: "canceled",
@@ -81,12 +81,47 @@ describe("POST /api/extension/ats-reservation", () => {
     expect(reserveMock).not.toHaveBeenCalled();
   });
 
+  it("rejects an extension the plan does not include", async () => {
+    claimsMock.mockResolvedValueOnce({
+      sub: "user_123",
+      email: "x@example.com",
+      client: "linkedin",
+    });
+    subscriptionMock.mockResolvedValueOnce(proRow());
+    const response = await POST(request({ jobId: "li-123" }));
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({
+      error: "PRO_REQUIRED",
+      reason: "extension_not_included",
+    });
+    expect(reserveMock).not.toHaveBeenCalled();
+  });
+
+  it("binds the ticket to an included extension", async () => {
+    claimsMock.mockResolvedValueOnce({
+      sub: "user_123",
+      email: "x@example.com",
+      client: "seek",
+    });
+    subscriptionMock.mockResolvedValueOnce(proRow());
+    reserveMock.mockResolvedValueOnce(allow());
+    signMock.mockResolvedValueOnce("signed-reservation");
+    const response = await POST(request({ jobId: "seek-123" }));
+    expect(response.status).toBe(200);
+    expect(signMock).toHaveBeenCalledWith({
+      userId: "user_123",
+      jobId: "seek-123",
+      client: "seek",
+    });
+  });
+
   it.each([{}, { jobId: "" }, { jobId: 42 }, { jobId: "x".repeat(257) }])(
     "rejects invalid reservation input",
     async (body) => {
       claimsMock.mockResolvedValueOnce({
         sub: "user_123",
         email: "x@example.com",
+        client: null,
       });
       subscriptionMock.mockResolvedValueOnce(proRow());
       const response = await POST(request(body));
@@ -97,7 +132,7 @@ describe("POST /api/extension/ats-reservation", () => {
   );
 
   it("returns exhausted allowance without signing", async () => {
-    claimsMock.mockResolvedValueOnce({ sub: "user_123", email: "x@example.com" });
+    claimsMock.mockResolvedValueOnce({ sub: "user_123", email: "x@example.com", client: null });
     subscriptionMock.mockResolvedValueOnce(proRow());
     reserveMock.mockResolvedValueOnce({
       ...allow(),
@@ -121,7 +156,7 @@ describe("POST /api/extension/ats-reservation", () => {
 
   it("reserves once and returns a user/job-bound ticket", async () => {
     process.env.ATS_PERIOD_LIMIT = "250";
-    claimsMock.mockResolvedValueOnce({ sub: "user_123", email: "x@example.com" });
+    claimsMock.mockResolvedValueOnce({ sub: "user_123", email: "x@example.com", client: null });
     subscriptionMock.mockResolvedValueOnce(proRow());
     reserveMock.mockResolvedValueOnce({ ...allow(), limit: 250, remaining: 249 });
     signMock.mockResolvedValueOnce("signed-reservation");
@@ -148,7 +183,7 @@ describe("POST /api/extension/ats-reservation", () => {
   });
 
   it("normalizes sensitive dependency failures", async () => {
-    claimsMock.mockResolvedValueOnce({ sub: "user_123", email: "x@example.com" });
+    claimsMock.mockResolvedValueOnce({ sub: "user_123", email: "x@example.com", client: null });
     subscriptionMock.mockRejectedValueOnce(new Error("postgres://secret"));
     const response = await POST(request({ jobId: "seek-123" }));
     expect(response.status).toBe(500);

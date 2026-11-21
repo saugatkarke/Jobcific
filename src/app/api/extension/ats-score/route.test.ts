@@ -112,7 +112,7 @@ describe("POST /api/extension/ats-score", () => {
   });
 
   it("validates ATS input before ticket verification", async () => {
-    claimsMock.mockResolvedValueOnce({ sub: "user_123", email: "x@example.com" });
+    claimsMock.mockResolvedValueOnce({ sub: "user_123", email: "x@example.com", client: null });
     validateMock.mockImplementationOnce(() => {
       throw new Error("INVALID_INPUT");
     });
@@ -126,7 +126,7 @@ describe("POST /api/extension/ats-score", () => {
     { ...validBody, reservationToken: "" },
     { ...validBody, reservationToken: 42 },
   ])("rejects a missing or malformed reservation ticket", async (body) => {
-    claimsMock.mockResolvedValueOnce({ sub: "user_123", email: "x@example.com" });
+    claimsMock.mockResolvedValueOnce({ sub: "user_123", email: "x@example.com", client: null });
     validateMock.mockReturnValueOnce(validInput);
     const response = await POST(request(body));
     expect(response.status).toBe(409);
@@ -137,7 +137,7 @@ describe("POST /api/extension/ats-score", () => {
   });
 
   it("normalizes ticket verification failure", async () => {
-    claimsMock.mockResolvedValueOnce({ sub: "user_123", email: "x@example.com" });
+    claimsMock.mockResolvedValueOnce({ sub: "user_123", email: "x@example.com", client: null });
     validateMock.mockReturnValueOnce(validInput);
     verifyMock.mockRejectedValueOnce(new Error("RESERVATION_INVALID"));
     const response = await POST(request(validBody));
@@ -149,7 +149,7 @@ describe("POST /api/extension/ats-score", () => {
   });
 
   it("rejects an already claimed reservation before Gemini", async () => {
-    claimsMock.mockResolvedValueOnce({ sub: "user_123", email: "x@example.com" });
+    claimsMock.mockResolvedValueOnce({ sub: "user_123", email: "x@example.com", client: null });
     validateMock.mockReturnValueOnce(validInput);
     verifyMock.mockResolvedValueOnce(validReservation());
     claimMock.mockResolvedValueOnce(false);
@@ -162,7 +162,7 @@ describe("POST /api/extension/ats-score", () => {
   });
 
   it("claims a valid ticket once and returns no allowance metadata", async () => {
-    claimsMock.mockResolvedValueOnce({ sub: "user_123", email: "x@example.com" });
+    claimsMock.mockResolvedValueOnce({ sub: "user_123", email: "x@example.com", client: null });
     validateMock.mockReturnValueOnce(validInput);
     verifyMock.mockResolvedValueOnce(validReservation());
     claimMock.mockResolvedValueOnce(true);
@@ -183,12 +183,30 @@ describe("POST /api/extension/ats-score", () => {
     expect(body).not.toHaveProperty("allowance");
   });
 
+  it("verifies the ticket against the calling extension", async () => {
+    claimsMock.mockResolvedValueOnce({
+      sub: "user_123",
+      email: "x@example.com",
+      client: "linkedin",
+    });
+    validateMock.mockReturnValueOnce(validInput);
+    verifyMock.mockRejectedValueOnce(new Error("RESERVATION_INVALID"));
+    const response = await POST(request(validBody));
+    expect(verifyMock).toHaveBeenCalledWith("reservation-token", {
+      userId: "user_123",
+      jobId: "seek-123",
+      client: "linkedin",
+    });
+    expect(response.status).toBe(409);
+    expect(geminiMock).not.toHaveBeenCalled();
+  });
+
   it.each([
     ["MODEL_BUSY", 503],
     ["MODEL_RESPONSE_INVALID", 502],
     ["SERVER_MISCONFIGURED", 500],
   ])("maps %s to a stable %s response", async (code, status) => {
-    claimsMock.mockResolvedValueOnce({ sub: "user_123", email: "x@example.com" });
+    claimsMock.mockResolvedValueOnce({ sub: "user_123", email: "x@example.com", client: null });
     validateMock.mockReturnValueOnce(validInput);
     verifyMock.mockResolvedValueOnce(validReservation());
     claimMock.mockResolvedValueOnce(true);
@@ -199,7 +217,7 @@ describe("POST /api/extension/ats-score", () => {
   });
 
   it("hides sensitive unexpected failures", async () => {
-    claimsMock.mockResolvedValueOnce({ sub: "user_123", email: "x@example.com" });
+    claimsMock.mockResolvedValueOnce({ sub: "user_123", email: "x@example.com", client: null });
     validateMock.mockReturnValueOnce(validInput);
     verifyMock.mockResolvedValueOnce(validReservation());
     claimMock.mockRejectedValueOnce(new Error("postgres://secret"));

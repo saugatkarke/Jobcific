@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { atsPeriodLimit } from "@/lib/ats-period-limit";
 import { reserveAtsUsage } from "@/lib/ats-quota";
 import { signAtsReservation } from "@/lib/ats-reservation";
-import { resolveEntitlement } from "@/lib/entitlement";
+import {
+  EXTENSION_NOT_INCLUDED,
+  entitledExtensions,
+  isClientEntitled,
+  resolveEntitlement,
+} from "@/lib/entitlement";
 import {
   extensionClaimsFromRequest,
   latestSubscriptionRow,
@@ -76,6 +81,9 @@ export async function POST(req: NextRequest) {
   ) {
     return errorResponse("PRO_REQUIRED");
   }
+  if (!isClientEntitled(claims.client, entitledExtensions(resolved))) {
+    return errorResponse("PRO_REQUIRED", { reason: EXTENSION_NOT_INCLUDED });
+  }
 
   let jobId;
   try {
@@ -104,6 +112,7 @@ export async function POST(req: NextRequest) {
     const reservationToken = await signAtsReservation({
       userId: claims.sub,
       jobId,
+      ...(claims.client ? { client: claims.client } : {}),
     });
     return NextResponse.json({ reservationToken, allowance: publicAllowance });
   } catch {
