@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { LegalPage, legalMetadata } from "@/components/LegalPage";
-import { APP_NAME, DISCLAIMER } from "@/lib/copy";
+import { APP_NAME } from "@/lib/copy";
 import {
   ATS_CLOUD_STATEMENT,
   ATS_NO_PERSONAL_API_KEY_STATEMENT,
@@ -25,14 +25,16 @@ export default function PrivacyPage() {
         This policy explains how {sellerIdentity()} (“we”, “us”) handles
         personal information when you use {APP_NAME} at{" "}
         <Link href="/">jobcific.com</Link>, create an account, subscribe to Pro,
-        or connect the Chrome extension. {DISCLAIMER}
+        or connect an Indeed, Seek, or LinkedIn Chrome extension. Not affiliated
+        with Indeed, Seek, or LinkedIn.
       </p>
 
       <h2>1. Who we are</h2>
       <p>
-        {APP_NAME} is a job-tracking product for Indeed and Seek. The website
-        provides accounts, Pro billing, and cloud ATS resume scoring. The Chrome
-        extension tracks jobs locally in your browser. For privacy questions,
+        {APP_NAME} is a job-tracking product for Indeed, Seek, and LinkedIn. The
+        website provides accounts, Pro billing, and cloud ATS resume scoring.
+        The Chrome extensions track jobs locally in your browser. For privacy
+        questions,
         email <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
       </p>
 
@@ -59,8 +61,8 @@ export default function PrivacyPage() {
         </li>
         <li>
           ATS scoring content: when cloud ATS scoring runs, we receive the
-          resume text and job description text for that request, plus the Seek
-          or Indeed job identifier. See section 4 for how that works.
+          resume text and job description text for that request, plus the Seek,
+          Indeed, or LinkedIn job identifier. See section 4 for how that works.
         </li>
         <li>
           ATS usage counts: the number of ATS scores reserved in your current
@@ -138,13 +140,14 @@ export default function PrivacyPage() {
 
       <h2>8. Chrome extension</h2>
       <p>
-        The extension stores your tracked jobs, hidden jobs, board state, and
-        your uploaded resume text on your device. It contacts this website to
-        read whether your plan is Pro or Free and, for cloud ATS scoring only,
-        to send the resume and job text described in section 4. It does not send
-        your tracked jobs, notes, or statuses to us. Uninstalling the extension
-        does not delete your website account, and removing the resume in the
-        extension popup deletes the local copy.
+        The Indeed, Seek, and LinkedIn extensions store your tracked jobs,
+        hidden jobs, board state, and your uploaded resume text on your device.
+        An extension contacts this website to read whether your plan is Pro or
+        Free and, for cloud ATS scoring only, to send the resume and job text
+        described in section 4. It does not send your tracked jobs, notes, or
+        statuses to us. Uninstalling an extension does not delete your website
+        account, and removing the resume in the extension popup deletes the
+        local copy.
       </p>
 
       <h2>9. Cookies</h2>

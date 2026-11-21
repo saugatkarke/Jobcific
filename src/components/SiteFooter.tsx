@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { DISCLAIMER } from "@/lib/copy";
 import { LEGAL_PAGES } from "@/lib/legal";
 import { FooterWhackAMole } from "./FooterWhackAMole";
 import { GridBand } from "./PageGrid";
@@ -14,8 +13,8 @@ export function SiteFooter() {
           <Logo />
         </div>
         <p className="mt-3 text-sm text-[var(--muted)]">
-          Track Indeed and Seek applications locally. Upgrade here for Hide jobs
-          and ATS results.
+          Track Indeed, Seek, and LinkedIn applications locally. Upgrade here for
+          Hide jobs and ATS results.
         </p>
         <div className="mt-4">
           {/* Launchpadly: Jobcific (light) */}
@@ -85,7 +84,7 @@ export function SiteFooter() {
         </ul>
       </div>
       <p className="col-span-12 border-t border-[var(--line)] px-4 py-4 text-center text-xs text-[var(--muted)]">
-        {DISCLAIMER}
+        Not affiliated with Indeed, Seek, or LinkedIn.
       </p>
     </GridBand>
   );

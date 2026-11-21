@@ -189,15 +189,15 @@ describe("privacy policy page", () => {
 
 describe("legal last-updated stamp", () => {
   it("is the date of the latest policy change", () => {
-    expect(LEGAL_LAST_UPDATED).toBe("18 September 2026");
+    expect(LEGAL_LAST_UPDATED).toBe("22 November 2026");
   });
 
   it("is a real, parseable date", () => {
     const parsed = new Date(`${LEGAL_LAST_UPDATED} UTC`);
     expect(Number.isNaN(parsed.getTime())).toBe(false);
     expect(parsed.getUTCFullYear()).toBe(2026);
-    expect(parsed.getUTCMonth()).toBe(8);
-    expect(parsed.getUTCDate()).toBe(18);
+    expect(parsed.getUTCMonth()).toBe(10);
+    expect(parsed.getUTCDate()).toBe(22);
   });
 
   it("is rendered once at the top of every legal page", () => {
