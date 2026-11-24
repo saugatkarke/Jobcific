@@ -21,24 +21,35 @@ export const EXTENSIONS: readonly ExtensionInfo[] = [
   {
     client: "indeed",
     name: "Indeed",
-    ids: ["lhkokphioeoagcpblnlidbehgpcbpgho", "mamnkbcandbeclhpambinlemkfggkcok"],
+    ids: [
+      "lhkokphioeoagcpblnlidbehgpcbpgho",
+      "mamnkbcandbeclhpambinlemkfggkcok",
+    ],
     cwsUrl: INDEED_CWS_URL,
   },
   {
     client: "linkedin",
     name: "LinkedIn",
-    ids: ["hpclhkcflhmngpkgjpkogkhmeboadnmb", "gefachkggkhiiolgngplghiemhfbbjae"],
+    ids: [
+      "hpclhkcflhmngpkgjpkogkhmeboadnmb",
+      "gefachkggkhiiolgngplghiemhfbbjae",
+    ],
     cwsUrl: LINKEDIN_CWS_URL,
   },
   {
     client: "seek",
     name: "Seek",
-    ids: ["mpglbfbnhhnbbilpnihnjhcencoijiep", "omdijdkofmlgjjipfaknienpebhoafem"],
+    ids: [
+      "mpglbfbnhhnbbilpnihnjhcencoijiep",
+      "omdijdkofmlgjjipfaknienpebhoafem",
+    ],
     cwsUrl: SEEK_CWS_URL,
   },
 ];
 
-export function extensionClientForRedirectUri(uri: string): ExtensionClient | null {
+export function extensionClientForRedirectUri(
+  uri: string,
+): ExtensionClient | null {
   let host: string;
   try {
     host = new URL(uri).hostname;
@@ -60,7 +71,9 @@ export function normalizeExtensionPicks(value: unknown): ExtensionClient[] {
 }
 
 export function extensionNames(clients: readonly ExtensionClient[]): string[] {
-  return EXTENSIONS.filter((ext) => clients.includes(ext.client)).map((ext) => ext.name);
+  return EXTENSIONS.filter((ext) => clients.includes(ext.client)).map(
+    (ext) => ext.name,
+  );
 }
 
 export function syncedAgoLabel(at: Date, now: Date = new Date()): string {
