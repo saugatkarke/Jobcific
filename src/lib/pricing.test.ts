@@ -1,113 +1,123 @@
 import { describe, expect, it, vi } from "vitest";
 import {
-  MONTHLY_AMOUNT,
-  YEARLY_AMOUNT,
-  canStartCheckout,
-  defaultPricingInterval,
+  PLANS,
   formatPrice,
   intervalFromPriceId,
-  pricingCardOrder,
-  pricingIntervalTabs,
-  pricingProCta,
-  yearlyDiscountPercent,
+  isCheckoutPriceId,
+  isProPriceId,
+  monthsInInterval,
+  planById,
+  planForPickCount,
+  priceInfo,
+  proCardCta,
+  quarterlyDiscountPercent,
 } from "./pricing";
 
-vi.stubEnv("PADDLE_PRICE_ID_MONTHLY", "pri_month");
-vi.stubEnv("PADDLE_PRICE_ID_YEARLY", "pri_year");
+vi.stubEnv("PADDLE_PRICE_ID_MONTHLY", "pri_legacy_month");
+vi.stubEnv("PADDLE_PRICE_ID_YEARLY", "pri_legacy_year");
+vi.stubEnv("PADDLE_PRICE_ID_LENS_MONTHLY", "pri_lens_m");
+vi.stubEnv("PADDLE_PRICE_ID_LENS_QUARTERLY", "pri_lens_q");
+vi.stubEnv("PADDLE_PRICE_ID_BIFOCAL_MONTHLY", "pri_bifocal_m");
+vi.stubEnv("PADDLE_PRICE_ID_BIFOCAL_QUARTERLY", "pri_bifocal_q");
+vi.stubEnv("PADDLE_PRICE_ID_PANORAMA_MONTHLY", "pri_panorama_m");
+vi.stubEnv("PADDLE_PRICE_ID_PANORAMA_QUARTERLY", "pri_panorama_q");
 
-describe("pricing display helpers", () => {
-  it("formats whole dollars without decimals", () => {
-    expect(formatPrice(YEARLY_AMOUNT)).toBe("$39");
+describe("plans", () => {
+  it("prices Lens, Bifocal, and Panorama", () => {
+    expect(PLANS.map((plan) => [plan.name, plan.extensionCount, plan.monthly, plan.quarterly])).toEqual([
+      ["Lens", 1, 4.99, 9.99],
+      ["Bifocal", 2, 8.99, 17.99],
+      ["Panorama", 3, 11.99, 23.99],
+    ]);
   });
 
-  it("keeps cents on monthly", () => {
-    expect(formatPrice(MONTHLY_AMOUNT)).toBe("$4.99");
+  it("discounts every quarterly price by about a third", () => {
+    for (const plan of PLANS) expect(quarterlyDiscountPercent(plan)).toBe(33);
   });
 
-  it("rounds yearly savings to a percent badge", () => {
-    expect(yearlyDiscountPercent()).toBe(35);
+  it("formats prices", () => {
+    expect(formatPrice(39)).toBe("$39");
+    expect(formatPrice(4.99)).toBe("$4.99");
   });
 });
 
-describe("pro pricing CTA", () => {
-  it("maps Paddle price IDs to billing intervals", () => {
-    expect(intervalFromPriceId("pri_month")).toBe("monthly");
-    expect(intervalFromPriceId("pri_year")).toBe("yearly");
-    expect(intervalFromPriceId("pri_other")).toBeNull();
-  });
-
-  it("opens the yearly tab for monthly subscribers", () => {
-    expect(defaultPricingInterval("monthly")).toBe("yearly");
-  });
-
-  it("stays on yearly for yearly subscribers and monthly for everyone else", () => {
-    expect(defaultPricingInterval("yearly")).toBe("yearly");
-    expect(defaultPricingInterval(null)).toBe("monthly");
-  });
-
-  it("keeps Monthly selected for logged-in free users", () => {
-    expect(defaultPricingInterval(null)).toBe("monthly");
-  });
-
-  it("puts Free first for logged-out visitors and Pro first when logged in", () => {
-    expect(pricingCardOrder(false)).toEqual(["free", "pro"]);
-    expect(pricingCardOrder(true)).toEqual(["pro", "free"]);
-  });
-
-  it("puts Yearly first only for monthly subscribers", () => {
-    expect(pricingIntervalTabs(null)).toEqual(["monthly", "yearly"]);
-    expect(pricingIntervalTabs("yearly")).toEqual(["monthly", "yearly"]);
-    expect(pricingIntervalTabs("monthly")).toEqual(["yearly", "monthly"]);
-  });
-
-  it("disables the current plan with Subscribed", () => {
-    expect(pricingProCta({ subscribedInterval: "monthly", selectedInterval: "monthly" })).toEqual({
-      label: "Subscribed",
-      disabled: true,
-      showLegal: false,
+describe("priceInfo", () => {
+  it("maps new prices to their plan and interval", () => {
+    expect(priceInfo("pri_bifocal_q")).toEqual({
+      priceId: "pri_bifocal_q",
+      plan: "bifocal",
+      interval: "quarterly",
+      amount: 17.99,
+      legacy: false,
     });
-    expect(pricingProCta({ subscribedInterval: "yearly", selectedInterval: "yearly" })).toEqual({
-      label: "Subscribed",
-      disabled: true,
-      showLegal: false,
-    });
+    expect(intervalFromPriceId("pri_lens_m")).toBe("monthly");
   });
 
-  it("keeps yearly checkout available for monthly subscribers", () => {
-    expect(pricingProCta({ subscribedInterval: "monthly", selectedInterval: "yearly" })).toEqual({
+  it("maps legacy prices to Bifocal", () => {
+    expect(priceInfo("pri_legacy_month")).toMatchObject({
+      plan: "bifocal",
+      interval: "monthly",
+      amount: 4.99,
+      legacy: true,
+    });
+    expect(priceInfo("pri_legacy_year")).toMatchObject({ interval: "yearly", legacy: true });
+  });
+
+  it("allows checkout only on new prices", () => {
+    expect(isProPriceId("pri_legacy_month")).toBe(true);
+    expect(isCheckoutPriceId("pri_legacy_month")).toBe(false);
+    expect(isCheckoutPriceId("pri_panorama_m")).toBe(true);
+    expect(isProPriceId("pri_other")).toBe(false);
+    expect(priceInfo("")).toBeNull();
+  });
+
+  it("counts months per billing interval", () => {
+    expect(monthsInInterval("monthly")).toBe(1);
+    expect(monthsInInterval("quarterly")).toBe(3);
+    expect(monthsInInterval("yearly")).toBe(12);
+  });
+});
+
+describe("planForPickCount", () => {
+  it("names the plan from the number of extensions picked", () => {
+    expect(planForPickCount(1).id).toBe("lens");
+    expect(planForPickCount(2).id).toBe("bifocal");
+    expect(planForPickCount(3).id).toBe("panorama");
+  });
+
+  it("shows Lens as the starting price before anything is picked", () => {
+    expect(planForPickCount(0)).toBe(planById("lens"));
+  });
+});
+
+describe("proCardCta", () => {
+  it("asks for an extension before checkout", () => {
+    expect(proCardCta({ current: null, picked: 0 })).toEqual({
+      label: "Pick an extension",
+      disabled: true,
+      showLegal: true,
+    });
+    expect(proCardCta({ current: null, picked: 2 })).toEqual({
       label: "Subscribe",
       disabled: false,
       showLegal: true,
     });
   });
 
-  it("keeps yearly subscribers subscribed even on the monthly tab", () => {
-    expect(pricingProCta({ subscribedInterval: "yearly", selectedInterval: "monthly" })).toEqual({
-      label: "Subscribed",
-      disabled: true,
-      showLegal: false,
-    });
-  });
-
-  it("blocks checkout for the current plan and any yearly subscriber", () => {
-    expect(canStartCheckout(null, "monthly")).toBe(true);
-    expect(canStartCheckout("monthly", "yearly")).toBe(true);
-    expect(canStartCheckout("monthly", "monthly")).toBe(false);
-    expect(canStartCheckout("yearly", "yearly")).toBe(false);
-    expect(canStartCheckout("yearly", "monthly")).toBe(false);
-  });
-
-  it("shows Subscribing when checkout is pending", () => {
-    expect(
-      pricingProCta({
-        subscribedInterval: null,
-        selectedInterval: "monthly",
-        pending: true,
-      }),
-    ).toEqual({
+  it("shows Subscribing while checkout opens", () => {
+    expect(proCardCta({ current: null, picked: 1, pending: true })).toEqual({
       label: "Subscribing...",
       disabled: true,
       showLegal: true,
+    });
+  });
+
+  it("locks the card on the current plan for subscribers", () => {
+    const current = { plan: "bifocal" as const, legacy: true, extensions: ["seek", "indeed"] };
+    expect(proCardCta({ current, picked: 2 })).toEqual({
+      label: "Current plan",
+      disabled: true,
+      showLegal: false,
     });
   });
 });

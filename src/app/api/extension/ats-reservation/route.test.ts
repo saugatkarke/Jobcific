@@ -37,6 +37,10 @@ function proRow() {
     paddlePriceId: "pri_123",
     status: "active",
     plan: "pro",
+    extensions: null as string[] | null,
+    carryPriceId: null as string | null,
+    carryExtensions: null as string[] | null,
+    carryUntil: null as Date | null,
     currentPeriodEnd: new Date("2026-10-01T00:00:00.000Z"),
     cancelAtPeriodEnd: false,
     occurredAt: new Date("2026-09-01T00:00:00.000Z"),
@@ -113,6 +117,58 @@ describe("POST /api/extension/ats-reservation", () => {
       jobId: "seek-123",
       client: "seek",
     });
+  });
+
+  it("scales the ATS limit to a quarterly billing period", async () => {
+    process.env.ATS_PERIOD_LIMIT = "250";
+    process.env.PADDLE_PRICE_ID_LENS_QUARTERLY = "pri_lens_q";
+    claimsMock.mockResolvedValueOnce({
+      sub: "user_123",
+      email: "x@example.com",
+      client: "linkedin",
+    });
+    subscriptionMock.mockResolvedValueOnce({
+      ...proRow(),
+      paddlePriceId: "pri_lens_q",
+      extensions: ["linkedin"],
+    });
+    reserveMock.mockResolvedValueOnce(allow());
+    signMock.mockResolvedValueOnce("signed-reservation");
+    const response = await POST(request({ jobId: "li-123" }));
+    expect(response.status).toBe(200);
+    expect(reserveMock).toHaveBeenCalledWith(
+      expect.objectContaining({ limit: 750 }),
+    );
+    delete process.env.PADDLE_PRICE_ID_LENS_QUARTERLY;
+  });
+
+  it("keeps the carried plan's extensions until a scheduled downgrade takes effect", async () => {
+    process.env.PADDLE_PRICE_ID_LENS_MONTHLY = "pri_lens_m";
+    process.env.PADDLE_PRICE_ID_PANORAMA_MONTHLY = "pri_panorama_m";
+    const downgraded = {
+      ...proRow(),
+      paddlePriceId: "pri_lens_m",
+      extensions: ["seek"],
+      carryPriceId: "pri_panorama_m",
+      carryExtensions: ["seek", "indeed", "linkedin"],
+    };
+    claimsMock.mockResolvedValue({ sub: "user_123", email: "x@example.com", client: "linkedin" });
+    reserveMock.mockResolvedValue(allow());
+    signMock.mockResolvedValue("signed-reservation");
+
+    subscriptionMock.mockResolvedValueOnce({
+      ...downgraded,
+      carryUntil: new Date(Date.now() + 86400000),
+    });
+    expect((await POST(request({ jobId: "li-1" }))).status).toBe(200);
+
+    subscriptionMock.mockResolvedValueOnce({
+      ...downgraded,
+      carryUntil: new Date(Date.now() - 1000),
+    });
+    expect((await POST(request({ jobId: "li-2" }))).status).toBe(403);
+    delete process.env.PADDLE_PRICE_ID_LENS_MONTHLY;
+    delete process.env.PADDLE_PRICE_ID_PANORAMA_MONTHLY;
   });
 
   it.each([{}, { jobId: "" }, { jobId: 42 }, { jobId: "x".repeat(257) }])(

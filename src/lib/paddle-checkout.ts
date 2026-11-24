@@ -11,6 +11,7 @@ export function checkoutSuccessUrl(origin: string): string {
 
 export async function startPaddleCheckout(
   priceId: string,
+  extensions: readonly string[] = [],
 ): Promise<CheckoutResult> {
   if (!priceId) {
     return {
@@ -23,7 +24,7 @@ export async function startPaddleCheckout(
     const res = await fetch("/api/billing/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ priceId }),
+      body: JSON.stringify({ priceId, extensions }),
     });
     if (res.status === 401) {
       return { status: "login" };
@@ -31,13 +32,19 @@ export async function startPaddleCheckout(
     if (res.status === 409) {
       return {
         status: "error",
-        message: "You already have this plan.",
+        message: "You already have a plan. Manage it from your account.",
       };
     }
     const data = (await res.json()) as {
       transactionId?: string;
       error?: string;
     };
+    if (data.error === "INVALID_EXTENSIONS") {
+      return {
+        status: "error",
+        message: "Pick the extensions this plan includes, then try again.",
+      };
+    }
     if (!res.ok || !data.transactionId) {
       return {
         status: "error",

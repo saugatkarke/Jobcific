@@ -113,25 +113,27 @@ describe("pushLogin", () => {
 });
 
 describe("beginCheckoutDataLayerEvent", () => {
-  it("sends the monthly price when checkout opens", () => {
+  it("sends the plan and monthly price when checkout opens", () => {
     expect(
-      beginCheckoutDataLayerEvent({ interval: "monthly", value: 4.99 }),
+      beginCheckoutDataLayerEvent({ interval: "monthly", plan: "lens", value: 4.99 }),
     ).toEqual({
       event: "begin_checkout",
       currency: "USD",
       value: 4.99,
       interval: "monthly",
+      plan: "lens",
     });
   });
 
-  it("sends the yearly price when checkout opens", () => {
+  it("sends the plan and quarterly price when checkout opens", () => {
     expect(
-      beginCheckoutDataLayerEvent({ interval: "yearly", value: 39 }),
+      beginCheckoutDataLayerEvent({ interval: "quarterly", plan: "panorama", value: 23.99 }),
     ).toEqual({
       event: "begin_checkout",
       currency: "USD",
-      value: 39,
-      interval: "yearly",
+      value: 23.99,
+      interval: "quarterly",
+      plan: "panorama",
     });
   });
 });
@@ -141,35 +143,42 @@ describe("pushBeginCheckout", () => {
     const dataLayer: Record<string, unknown>[] = [];
     vi.stubGlobal("window", { dataLayer });
 
-    pushBeginCheckout({ interval: "yearly", value: 39 });
+    pushBeginCheckout({ interval: "quarterly", plan: "bifocal", value: 17.99 });
 
     expect(dataLayer).toEqual([
       {
         event: "begin_checkout",
         currency: "USD",
-        value: 39,
-        interval: "yearly",
+        value: 17.99,
+        interval: "quarterly",
+        plan: "bifocal",
       },
     ]);
   });
 });
 
 describe("purchaseDataLayerEvent", () => {
-  it("sends the monthly purchase value", () => {
-    expect(purchaseDataLayerEvent({ interval: "monthly", value: 4.99 })).toEqual({
+  it("sends the plan and purchase value", () => {
+    expect(
+      purchaseDataLayerEvent({ interval: "monthly", plan: "bifocal", value: 8.99 }),
+    ).toEqual({
       event: "purchase",
       currency: "USD",
-      value: 4.99,
+      value: 8.99,
       interval: "monthly",
+      plan: "bifocal",
     });
   });
 
-  it("sends the yearly purchase value", () => {
-    expect(purchaseDataLayerEvent({ interval: "yearly", value: 39 })).toEqual({
+  it("sends a legacy yearly purchase value", () => {
+    expect(
+      purchaseDataLayerEvent({ interval: "yearly", plan: "bifocal", value: 39 }),
+    ).toEqual({
       event: "purchase",
       currency: "USD",
       value: 39,
       interval: "yearly",
+      plan: "bifocal",
     });
   });
 });
@@ -179,7 +188,7 @@ describe("pushPurchase", () => {
     const dataLayer: Record<string, unknown>[] = [];
     vi.stubGlobal("window", { dataLayer });
 
-    pushPurchase({ interval: "monthly", value: 4.99 });
+    pushPurchase({ interval: "monthly", plan: "lens", value: 4.99 });
 
     expect(dataLayer).toEqual([
       {
@@ -187,6 +196,7 @@ describe("pushPurchase", () => {
         currency: "USD",
         value: 4.99,
         interval: "monthly",
+        plan: "lens",
       },
     ]);
   });

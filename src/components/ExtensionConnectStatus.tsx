@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { INDEED_CWS_URL, SEEK_CWS_URL } from "@/lib/cws";
+import { INDEED_CWS_URL, LINKEDIN_CWS_URL, SEEK_CWS_URL } from "@/lib/cws";
 import { BtnSpinner } from "./BusyButton";
 
 type ConnectStatus = "connecting" | "waiting" | "missing" | "error";
@@ -118,7 +118,7 @@ export function ExtensionConnectStatus() {
       >
         <p className="text-sm font-medium">We couldn&apos;t detect the extension.</p>
         <p className="mt-1 text-sm text-[var(--muted)]">
-          Install or enable the Seek or Indeed extension in Chrome, then retry.
+          Install or enable the Indeed, LinkedIn, or Seek extension in Chrome, then retry.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <button
@@ -129,20 +129,28 @@ export function ExtensionConnectStatus() {
             Retry connection
           </button>
           <a
-            href={SEEK_CWS_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-secondary"
-          >
-            Get the Seek extension
-          </a>
-          <a
             href={INDEED_CWS_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-secondary"
           >
             Get the Indeed extension
+          </a>
+          <a
+            href={LINKEDIN_CWS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-secondary"
+          >
+            Get the LinkedIn extension
+          </a>
+          <a
+            href={SEEK_CWS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-secondary"
+          >
+            Get the Seek extension
           </a>
         </div>
       </div>

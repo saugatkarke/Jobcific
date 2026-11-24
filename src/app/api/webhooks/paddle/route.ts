@@ -5,7 +5,7 @@ import { getPaddle } from "@/lib/paddle";
 import { mapPaddleSubscription, shouldApplyEvent } from "@/lib/paddle-map";
 import {
   markPurchaseEventPending,
-  purchaseIntervalToQueue,
+  purchaseToQueue,
 } from "@/lib/purchase-event";
 import { paddleEvent, subscription, user } from "@/lib/schema";
 
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
       if (owners[0]) {
         mapped = mapPaddleSubscription({
           occurredAt: event.occurredAt,
-          data: { ...data, customData: { userId: owners[0].id } },
+          data: { ...data, customData: { ...data.customData, userId: owners[0].id } },
         });
       }
     }
@@ -77,12 +77,16 @@ export async function POST(req: NextRequest) {
           userId: mapped.userId,
           paddleSubscriptionId: mapped.paddleSubscriptionId,
           paddlePriceId: mapped.paddlePriceId,
+          extensions: mapped.extensions ?? prior[0]?.extensions ?? null,
           status: mapped.status,
           plan: mapped.plan,
           currentPeriodEnd: mapped.currentPeriodEnd,
           cancelAtPeriodEnd: mapped.cancelAtPeriodEnd,
           occurredAt: mapped.occurredAt,
           updatedAt: new Date(),
+          ...(type === "subscription.canceled"
+            ? { carryPriceId: null, carryExtensions: null, carryUntil: null }
+            : {}),
         };
         if (prior[0]) {
           await db.update(subscription).set(row).where(eq(subscription.id, prior[0].id));
@@ -95,15 +99,15 @@ export async function POST(req: NextRequest) {
             .set({ paddleCustomerId: mapped.paddleCustomerId })
             .where(eq(user.id, mapped.userId));
         }
-        const purchaseInterval = purchaseIntervalToQueue({
+        const purchasedPriceId = purchaseToQueue({
           eventType: type,
           status: mapped.status,
           plan: mapped.plan,
           previousPriceId: prior[0]?.paddlePriceId ?? null,
           nextPriceId: mapped.paddlePriceId,
         });
-        if (purchaseInterval) {
-          await markPurchaseEventPending(mapped.userId, purchaseInterval);
+        if (purchasedPriceId) {
+          await markPurchaseEventPending(mapped.userId, purchasedPriceId);
         }
       }
     }

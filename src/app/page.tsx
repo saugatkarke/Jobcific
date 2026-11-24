@@ -16,7 +16,7 @@ import { MeshHero } from "@/components/MeshHero";
 import { GridBand } from "@/components/PageGrid";
 import { Reveal } from "@/components/Reveal";
 import { SupportedMarkets } from "@/components/SupportedMarkets";
-import { INDEED_CWS_URL, SEEK_CWS_URL } from "@/lib/cws";
+import { INDEED_CWS_URL, LINKEDIN_CWS_URL, SEEK_CWS_URL } from "@/lib/cws";
 
 const noteFont = Caveat({
   subsets: ["latin"],
@@ -33,7 +33,7 @@ export default function HomePage() {
             <h1 className="hero-enter hero-enter-2 text-4xl font-bold tracking-tight md:text-6xl">
               Built for <span className="italic">serious job</span> searches
               <br />
-              on Indeed and Seek.
+              on Indeed, LinkedIn, and Seek.
             </h1>
             <p className="hero-enter hero-enter-3 mx-auto mt-5 max-w-xl text-[var(--muted)]">
               The salary is buried. The publish date is buried.
@@ -54,8 +54,9 @@ export default function HomePage() {
                 </PendingLink>
                 <div className="hero-install-anchor">
                   <HeroInstallSplit
-                    seekUrl={SEEK_CWS_URL}
                     indeedUrl={INDEED_CWS_URL}
+                    linkedinUrl={LINKEDIN_CWS_URL}
+                    seekUrl={SEEK_CWS_URL}
                   />
                   <div className="hero-nosignup-callout">
                     <svg
@@ -147,11 +148,12 @@ export default function HomePage() {
           <FeatureItem
             icon={<IconDownload className="h-5 w-5" />}
             title="1. Install free"
-            body="Load the Indeed or Seek Chrome extension and keep tracking jobs locally."
+            body="Load the Indeed, LinkedIn, or Seek Chrome extension and keep tracking jobs locally."
             actions={
               <>
-                <StoreLink href={SEEK_CWS_URL} label="Seek" />
                 <StoreLink href={INDEED_CWS_URL} label="Indeed" />
+                <StoreLink href={LINKEDIN_CWS_URL} label="LinkedIn" />
+                <StoreLink href={SEEK_CWS_URL} label="Seek" />
               </>
             }
           />

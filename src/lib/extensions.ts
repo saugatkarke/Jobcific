@@ -1,4 +1,4 @@
-import { INDEED_CWS_URL, SEEK_CWS_URL } from "./cws";
+import { INDEED_CWS_URL, LINKEDIN_CWS_URL, SEEK_CWS_URL } from "./cws";
 
 export type ExtensionClient = "seek" | "indeed" | "linkedin";
 
@@ -16,13 +16,8 @@ type ExtensionInfo = {
   cwsUrl: string | null;
 };
 
+/* Display order everywhere on the site: Indeed, LinkedIn, Seek. */
 export const EXTENSIONS: readonly ExtensionInfo[] = [
-  {
-    client: "seek",
-    name: "Seek",
-    ids: ["mpglbfbnhhnbbilpnihnjhcencoijiep", "omdijdkofmlgjjipfaknienpebhoafem"],
-    cwsUrl: SEEK_CWS_URL,
-  },
   {
     client: "indeed",
     name: "Indeed",
@@ -32,8 +27,14 @@ export const EXTENSIONS: readonly ExtensionInfo[] = [
   {
     client: "linkedin",
     name: "LinkedIn",
-    ids: ["gefachkggkhiiolgngplghiemhfbbjae"],
-    cwsUrl: null,
+    ids: ["hpclhkcflhmngpkgjpkogkhmeboadnmb", "gefachkggkhiiolgngplghiemhfbbjae"],
+    cwsUrl: LINKEDIN_CWS_URL,
+  },
+  {
+    client: "seek",
+    name: "Seek",
+    ids: ["mpglbfbnhhnbbilpnihnjhcencoijiep", "omdijdkofmlgjjipfaknienpebhoafem"],
+    cwsUrl: SEEK_CWS_URL,
   },
 ];
 
@@ -51,6 +52,15 @@ export function extensionClientForRedirectUri(uri: string): ExtensionClient | nu
 
 export function isExtensionClient(value: unknown): value is ExtensionClient {
   return EXTENSIONS.some((ext) => ext.client === value);
+}
+
+export function normalizeExtensionPicks(value: unknown): ExtensionClient[] {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.filter(isExtensionClient))];
+}
+
+export function extensionNames(clients: readonly ExtensionClient[]): string[] {
+  return EXTENSIONS.filter((ext) => clients.includes(ext.client)).map((ext) => ext.name);
 }
 
 export function syncedAgoLabel(at: Date, now: Date = new Date()): string {

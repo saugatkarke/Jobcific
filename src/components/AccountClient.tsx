@@ -12,9 +12,12 @@ import {
   checkoutNotice,
   needsEntitlementFetch,
   planStatusLabel,
+  planSummary,
+  toAccountEntitlement,
   type AccountEntitlement,
 } from "@/lib/account-entitlement";
 import { EXTENSIONS, type ExtensionConnection } from "@/lib/extensions";
+import type { PlanPriceIds } from "@/lib/pricing";
 import {
   EXTENSION_CONNECT_HREF,
   JOB_BOARD_LINKS,
@@ -31,6 +34,7 @@ import {
   IconXCircle,
 } from "./icons";
 import { AvatarPicker } from "./AvatarPicker";
+import { PlanChangeSheet } from "./PlanChangePanel";
 import { ChromeMark } from "./HeroInstallSplit";
 import {
   BtnSpinner,
@@ -54,6 +58,7 @@ type AccountState = {
   extensionConnections: ExtensionConnection[];
   notice: string;
   viewer: AccountViewer | null;
+  refresh: () => Promise<void>;
 };
 
 const AccountContext = createContext<AccountState>({
@@ -61,10 +66,22 @@ const AccountContext = createContext<AccountState>({
   extensionConnections: [],
   notice: "",
   viewer: null,
+  refresh: async () => {},
 });
 
 function useAccount() {
   return useContext(AccountContext);
+}
+
+export function useAccountEntitlement() {
+  const { ent, refresh } = useAccount();
+  return { ent, refresh };
+}
+
+async function fetchEntitlement(): Promise<AccountEntitlement> {
+  const res = await fetch("/api/me/entitlement", { cache: "no-store" });
+  if (!res.ok) throw new Error(`Entitlement request failed: ${res.status}`);
+  return toAccountEntitlement((await res.json()) as AccountEntitlement);
 }
 
 export function AccountProvider({
@@ -92,14 +109,9 @@ export function AccountProvider({
     let retry: number | undefined;
     async function load(attempt = 0) {
       try {
-        const res = await fetch("/api/me/entitlement");
-        const data = (await res.json()) as AccountEntitlement;
+        const data = await fetchEntitlement();
         if (cancelled) return;
-        setEnt({
-          plan: data.plan,
-          status: data.status,
-          interval: data.interval ?? null,
-        });
+        setEnt(data);
         if (checkoutSuccess && data.plan !== "pro" && attempt < 6) {
           retry = window.setTimeout(() => load(attempt + 1), 1500);
         }
@@ -116,6 +128,14 @@ export function AccountProvider({
     };
   }, [checkoutSuccess, shouldFetch]);
 
+  async function refresh() {
+    try {
+      setEnt(await fetchEntitlement());
+    } catch (error) {
+      console.error("Could not refresh the plan", error);
+    }
+  }
+
   return (
     <AccountContext.Provider
       value={{
@@ -123,6 +143,7 @@ export function AccountProvider({
         extensionConnections,
         notice: checkoutNotice(checkoutSuccess, ent),
         viewer,
+        refresh,
       }}
     >
       {children}
@@ -180,8 +201,15 @@ export function AccountWelcome() {
   );
 }
 
-export function AccountPlanCard() {
+export function AccountPlanCard({
+  priceIds,
+  openChangePlan = false,
+}: {
+  priceIds: PlanPriceIds;
+  openChangePlan?: boolean;
+}) {
   const { ent, notice, viewer } = useAccount();
+  const [changingPlan, setChangingPlan] = useState(openChangePlan);
   const { signOut, signingOut, setAvatar } = useSession();
   const { name, email, avatar, loading } = useViewer();
   const avatarColor = useAvatarColor(
@@ -279,10 +307,7 @@ export function AccountPlanCard() {
                   </button>
                 )}
               </div>
-              <div className="min-w-0">
-                <p className="plan-card-title">
-                  {isPro ? "You're a PRO" : "Being Free"}
-                </p>
+              <div className="plan-card-who">
                 {name ? <p className="plan-card-name">{name}</p> : null}
                 <div className="plan-card-email-row">
                   {email ? (
@@ -308,6 +333,9 @@ export function AccountPlanCard() {
                     )}
                   </button>
                 </div>
+                <p className="plan-card-title">
+                  {isPro ? "You're a PRO" : "Being Free"}
+                </p>
               </div>
             </div>
             <div className="plan-card-side">
@@ -322,17 +350,7 @@ export function AccountPlanCard() {
                 )}
                 {planStatusLabel(ent)}
               </span>
-              {isPro ? (
-                <BusyButton
-                  type="button"
-                  className="btn-secondary"
-                  busy={openingBilling}
-                  busyLabel="Opening billing..."
-                  onClick={manageBilling}
-                >
-                  Manage billing
-                </BusyButton>
-              ) : (
+              {isPro ? null : (
                 <PendingLink
                   href="/pricing"
                   className="btn-primary"
@@ -343,6 +361,30 @@ export function AccountPlanCard() {
               )}
             </div>
           </div>
+          {isPro ? (
+            <div className="plan-card-actions">
+              {ent.planId ? (
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setChangingPlan(true)}
+                  aria-haspopup="dialog"
+                  aria-expanded={changingPlan}
+                >
+                  Change plan
+                </button>
+              ) : null}
+              <BusyButton
+                type="button"
+                className="btn-secondary"
+                busy={openingBilling}
+                busyLabel="Opening billing..."
+                onClick={manageBilling}
+              >
+                Manage billing
+              </BusyButton>
+            </div>
+          ) : null}
           {notice ? <p className="plan-card-copy">{notice}</p> : null}
         </div>
         {isPro ? (
@@ -355,7 +397,7 @@ export function AccountPlanCard() {
             }
           >
             <IconShield className="h-3.5 w-3.5 shrink-0" />
-            {`Pro is ${status} on this account.`}
+            {`${planSummary(ent) || "Pro"} is ${status} on this account.`}
           </p>
         ) : null}
       </div>
@@ -370,6 +412,13 @@ export function AccountPlanCard() {
             setPicking(false);
           }}
           onCancel={() => setPicking(false)}
+        />
+      ) : null}
+      {isPro && ent.planId ? (
+        <PlanChangeSheet
+          open={changingPlan}
+          onClose={() => setChangingPlan(false)}
+          priceIds={priceIds}
         />
       ) : null}
     </div>
@@ -399,10 +448,7 @@ function AccountPlanCardSkeleton() {
                 Avatar
               </span>
             </div>
-            <div className="min-w-0">
-              <p className="plan-card-title">
-                <Skeleton>Being Free</Skeleton>
-              </p>
+            <div className="plan-card-who">
               <p className="plan-card-name">
                 <Skeleton>Your name</Skeleton>
               </p>
@@ -412,6 +458,9 @@ function AccountPlanCardSkeleton() {
                 </p>
                 <SkeletonBlock className="h-6 w-6 shrink-0" />
               </div>
+              <p className="plan-card-title">
+                <Skeleton>Being Free</Skeleton>
+              </p>
             </div>
           </div>
           <div className="plan-card-side">
@@ -430,7 +479,7 @@ function AccountPlanCardSkeleton() {
       </div>
       <p className="plan-card-tray">
         <SkeletonBlock className="h-3.5 w-3.5 shrink-0" />
-        <Skeleton>Free tracking on Seek and Indeed.</Skeleton>
+        <Skeleton>Free tracking on Indeed, LinkedIn, and Seek.</Skeleton>
       </p>
     </div>
   );
@@ -507,7 +556,7 @@ export function AccountExtensionCard() {
         </PendingLink>
       </div>
       <p className="mt-5 text-sm text-[var(--muted)]">
-        Then search as usual on Seek Australia, Seek New Zealand, or Indeed.
+        Then search as usual on Indeed, LinkedIn, Seek Australia, or Seek New Zealand.
       </p>
       <ul className="mt-3 space-y-2">
         {JOB_BOARD_LINKS.map((board) => (

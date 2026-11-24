@@ -5,7 +5,7 @@ import { useState } from "react";
 const ITEMS = [
   {
     q: "What does Pro unlock?",
-    a: "One Pro plan unlocks Hide / Unhide and ATS score results on both Indeed and Seek. Metrics, Copy JD, Save, Kanban, CSV export, and resume upload stay free.",
+    a: "Pro unlocks Hide / Unhide and ATS score results on each job site in your plan: Indeed, LinkedIn, or Seek. On LinkedIn it also unlocks the job title match filter. Metrics, Copy JD, Save, Kanban, CSV export, and resume upload stay free.",
   },
   {
     q: "Do you store my jobs or resume?",

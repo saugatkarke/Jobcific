@@ -35,7 +35,26 @@ describe("account portal", () => {
     expect(page).not.toContain("AccountDetailsCard");
     expect(client).not.toContain("export function AccountDetailsCard");
     expect(client).not.toContain('title="Account"');
-    expect(page).toContain("interval: ent.interval");
+    expect(page).toContain("toAccountEntitlement(");
+    expect(readFileSync("src/lib/account-entitlement.ts", "utf8")).toContain(
+      "interval: data.interval",
+    );
+  });
+
+  it("opens plan changes in a bottom sheet beside Manage billing", () => {
+    const planCard = client.slice(
+      client.indexOf("export function AccountPlanCard"),
+      client.indexOf("function PlanAurora"),
+    );
+    const actions = planCard.slice(planCard.indexOf('className="plan-card-actions"'));
+    expect(actions.indexOf("Change plan")).toBeLessThan(actions.indexOf("Manage billing"));
+    expect(planCard).toContain("<PlanChangeSheet");
+    expect(page).toContain("priceIds={planPriceIds()}");
+    expect(page).toContain('openChangePlan={change === "plan"}');
+    expect(css).toMatch(/\.plan-sheet \{[\s\S]*?animation: plan-sheet-in/);
+    expect(css).toMatch(/@keyframes plan-sheet-in \{\s*from \{\s*transform: translateY/);
+    expect(css).toMatch(/\.plan-sheet \.plan-sheet-cta-downgrade \{\s*background: #dc2626/);
+    expect(css).toMatch(/\.plan-sheet \.plan-sheet-cta-upgrade \{\s*background: linear-gradient\([^)]*var\(--gold\)/);
   });
 
   it("lays out avatar, identity, and the billing action in one header row", () => {
@@ -48,15 +67,17 @@ describe("account portal", () => {
       'className="plan-card-avatar"',
       "<UserAvatar",
       'className="plan-card-avatar-edit"',
-      'className="plan-card-title"',
+      'className="plan-card-who"',
       'className="plan-card-name"',
       'className="plan-card-email-row"',
       'className="plan-card-email"',
       'className="plan-card-signout"',
+      'className="plan-card-title"',
       'className="plan-card-side"',
       "{planStatusLabel(ent)}",
-      "Manage billing",
       'pendingLabel="Upgrading..."',
+      'className="plan-card-actions"',
+      "Manage billing",
       "<AvatarPicker",
     ].map((needle) => planCard.indexOf(needle));
     expect(order).not.toContain(-1);
@@ -117,7 +138,7 @@ describe("account portal", () => {
     );
     expect(planCard).toContain("{isPro ? <PlanAurora /> : null}");
     expect(planCard).toContain('<span className="plan-card-dot" aria-hidden />');
-    expect(planCard).not.toContain("Free tracking on Seek and Indeed.");
+    expect(planCard).not.toContain("Free tracking on Indeed, LinkedIn, and Seek.");
     expect(client).not.toContain("IconMetrics");
     expect(planCard).toMatch(/\{isPro \? \(\s*<p\s+className="plan-card-tray"/);
     expect(css).toMatch(
@@ -247,7 +268,7 @@ describe("account portal", () => {
       planCard.indexOf("Manage billing"),
     );
     expect(tray).toContain("<IconShield");
-    expect(tray).toContain("`Pro is ${status} on this account.`");
+    expect(tray).toContain('`${planSummary(ent) || "Pro"} is ${status} on this account.`');
     expect(planCard).toContain('{notice ? <p className="plan-card-copy">{notice}</p> : null}');
     expect(css).toMatch(/\.plan-card-stack-pro \.plan-card-tray \{[\s\S]*?var\(--mint\)/);
   });
@@ -326,8 +347,9 @@ describe("account portal", () => {
     expect(css).toMatch(/\.plan-card-pro \{[\s\S]*?--plan-glow-hover-opacity: 0\.95/);
   });
 
-  it("gives the card a little more height", () => {
-    expect(css).toMatch(/\.plan-card-free \{[\s\S]*?padding: 1\.75rem 1\.5rem 3\.5rem/);
+  it("lets the card height fit its content", () => {
+    expect(css).toMatch(/\.plan-card-free \{[\s\S]*?padding: 1\.5rem 1\.5rem 1\.75rem/);
+    expect(css).not.toMatch(/\.plan-card-(pro|free) \{[^}]*min-height/);
   });
 
   it("renders the viewer and plan on the server so the dashboard never flashes Free", () => {

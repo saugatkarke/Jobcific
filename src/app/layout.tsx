@@ -18,7 +18,7 @@ const roboto = Roboto({
 export const metadata: Metadata = {
   title: APP_NAME,
   description:
-    "Install the Jobcific extension to track Seek and Indeed jobs, reveal listing data, and check the ATS fit before you rewrite.",
+    "Install the Jobcific extension to track Indeed, LinkedIn, and Seek jobs, reveal listing data, and check the ATS fit before you rewrite.",
   icons: {
     icon: [{ url: "/Jobcific-favicon.svg", type: "image/svg+xml" }],
   },

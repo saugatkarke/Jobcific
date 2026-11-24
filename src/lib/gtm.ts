@@ -1,3 +1,5 @@
+import type { BillingInterval, PlanId } from "./pricing";
+
 type DataLayerEvent = {
   event: string;
   [key: string]: unknown;
@@ -53,43 +55,39 @@ export function loginDataLayerEvent(input: {
   };
 }
 
-export function beginCheckoutDataLayerEvent(input: {
-  interval: "monthly" | "yearly";
+export type PlanEventInput = {
+  interval: BillingInterval;
+  plan: PlanId;
   value: number;
-}): DataLayerEvent {
+};
+
+export function beginCheckoutDataLayerEvent(input: PlanEventInput): DataLayerEvent {
   return {
     event: "begin_checkout",
     currency: "USD",
     value: input.value,
     interval: input.interval,
+    plan: input.plan,
   };
 }
 
-export function pushBeginCheckout(input: {
-  interval: "monthly" | "yearly";
-  value: number;
-}) {
+export function pushBeginCheckout(input: PlanEventInput) {
   if (typeof window === "undefined") return;
   window.dataLayer = window.dataLayer ?? [];
   window.dataLayer.push(beginCheckoutDataLayerEvent(input));
 }
 
-export function purchaseDataLayerEvent(input: {
-  interval: "monthly" | "yearly";
-  value: number;
-}): DataLayerEvent {
+export function purchaseDataLayerEvent(input: PlanEventInput): DataLayerEvent {
   return {
     event: "purchase",
     currency: "USD",
     value: input.value,
     interval: input.interval,
+    plan: input.plan,
   };
 }
 
-export function pushPurchase(input: {
-  interval: "monthly" | "yearly";
-  value: number;
-}) {
+export function pushPurchase(input: PlanEventInput) {
   if (typeof window === "undefined") return;
   window.dataLayer = window.dataLayer ?? [];
   window.dataLayer.push(purchaseDataLayerEvent(input));

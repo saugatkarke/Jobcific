@@ -4,22 +4,25 @@ import Image from "next/image";
 import { useEffect, useId, useRef, useState } from "react";
 
 type HeroInstallSplitProps = {
-  seekUrl: string;
   indeedUrl: string;
+  linkedinUrl: string;
+  seekUrl: string;
   variant?: "inline" | "fill";
   buttonClassName?: string;
 };
 
 export function HeroInstallSplit({
-  seekUrl,
   indeedUrl,
+  linkedinUrl,
+  seekUrl,
   variant = "inline",
   buttonClassName,
 }: HeroInstallSplitProps) {
   const [open, setOpen] = useState(false);
-  const seekRef = useRef<HTMLAnchorElement>(null);
-  const seekId = useId();
+  const indeedRef = useRef<HTMLAnchorElement>(null);
   const indeedId = useId();
+  const linkedinId = useId();
+  const seekId = useId();
   const showChrome = variant === "inline";
   const fill = variant === "fill";
   const actionClass = [
@@ -31,7 +34,7 @@ export function HeroInstallSplit({
 
   useEffect(() => {
     if (!open) return;
-    seekRef.current?.focus();
+    indeedRef.current?.focus();
   }, [open]);
 
   return (
@@ -44,39 +47,9 @@ export function HeroInstallSplit({
       role="group"
       aria-label="Install Jobcific"
     >
-      <div className="hero-install-col hero-install-col-seek">
-        <a
-          ref={seekRef}
-          id={seekId}
-          href={seekUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`${actionClass} hero-install-choice`}
-          tabIndex={open ? 0 : -1}
-          aria-hidden={!open}
-        >
-          {showChrome ? <ChromeMark /> : null}
-          Install for Seek
-        </a>
-      </div>
-
-      <div className="hero-install-col hero-install-col-origin">
-        <button
-          type="button"
-          className={`${actionClass} hero-install-origin`}
-          aria-expanded={open}
-          aria-controls={`${seekId} ${indeedId}`}
-          aria-hidden={open}
-          tabIndex={open ? -1 : 0}
-          onClick={() => setOpen(true)}
-        >
-          {showChrome ? <ChromeMark /> : null}
-          Install free
-        </button>
-      </div>
-
       <div className="hero-install-col hero-install-col-indeed">
         <a
+          ref={indeedRef}
           id={indeedId}
           href={indeedUrl}
           target="_blank"
@@ -86,7 +59,52 @@ export function HeroInstallSplit({
           aria-hidden={!open}
         >
           {showChrome ? <ChromeMark /> : null}
-          Install for Indeed
+          {fill ? "Indeed" : "Install for Indeed"}
+        </a>
+      </div>
+
+      <div className="hero-install-col hero-install-col-origin">
+        <button
+          type="button"
+          className={`${actionClass} hero-install-origin`}
+          aria-expanded={open}
+          aria-controls={`${indeedId} ${linkedinId} ${seekId}`}
+          aria-hidden={open}
+          tabIndex={open ? -1 : 0}
+          onClick={() => setOpen(true)}
+        >
+          {showChrome ? <ChromeMark /> : null}
+          Install free
+        </button>
+      </div>
+
+      <div className="hero-install-col hero-install-col-linkedin">
+        <a
+          id={linkedinId}
+          href={linkedinUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`${actionClass} hero-install-choice`}
+          tabIndex={open ? 0 : -1}
+          aria-hidden={!open}
+        >
+          {showChrome ? <ChromeMark /> : null}
+          {fill ? "LinkedIn" : "Install for LinkedIn"}
+        </a>
+      </div>
+
+      <div className="hero-install-col hero-install-col-seek">
+        <a
+          id={seekId}
+          href={seekUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`${actionClass} hero-install-choice`}
+          tabIndex={open ? 0 : -1}
+          aria-hidden={!open}
+        >
+          {showChrome ? <ChromeMark /> : null}
+          {fill ? "Seek" : "Install for Seek"}
         </a>
       </div>
     </div>

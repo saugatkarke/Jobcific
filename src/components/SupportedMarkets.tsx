@@ -1,6 +1,7 @@
 import { TRUST_LINE } from "@/lib/copy";
 
 type CountryCode = "AU" | "NZ" | "UK" | "CA" | "US";
+type Board = "Indeed" | "LinkedIn" | "Seek";
 
 const COUNTRIES: Record<
   CountryCode,
@@ -21,7 +22,7 @@ function CountryChip({
   board,
 }: {
   country: CountryCode;
-  board: "Indeed" | "Seek";
+  board: Board;
 }) {
   const meta = COUNTRIES[country];
 
@@ -45,6 +46,30 @@ function CountryChip({
   );
 }
 
+function GlobalChip({ board }: { board: Board }) {
+  return (
+    <span
+      className="trust-chip"
+      data-country="global"
+      title={`Worldwide on ${board}`}
+      tabIndex={0}
+    >
+      <span className="flag-cut flag-cut-global" aria-hidden>
+        <svg viewBox="0 0 24 24" fill="none" className="flag-cut-media">
+          <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.6" />
+          <path
+            d="M4 12h16M12 4c2.2 2.3 3.3 5 3.3 8s-1.1 5.7-3.3 8c-2.2-2.3-3.3-5-3.3-8S9.8 6.3 12 4Z"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </span>
+      <span className="trust-chip-code">Global</span>
+    </span>
+  );
+}
+
 export function SupportedMarkets() {
   return (
     <div className="trust-markets">
@@ -58,6 +83,8 @@ export function SupportedMarkets() {
           board="Indeed"
         />
       ))}
+      <span className="trust-board">LinkedIn</span>
+      <GlobalChip board="LinkedIn" />
       <span className="trust-and">and</span>
       <span className="trust-board">Seek</span>
       {SEEK_MARKETS.map((country) => (

@@ -18,7 +18,7 @@ export default async function SignupPage({
         description="Email and password. We will email a verification link before first sign in."
         notes={[
           "Track jobs locally with Metrics, Copy JD, Save, and Kanban.",
-          "Connect the Indeed or Seek extension after you sign in.",
+          "Connect the Indeed, LinkedIn, or Seek extension after you sign in.",
           "Upgrade to Pro here when you want Hide jobs and ATS scores.",
         ]}
       >

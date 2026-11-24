@@ -64,7 +64,7 @@ describe("entitlementPayload per extension", () => {
     expect(body).toMatchObject({
       plan: "pro",
       features: { hideJobs: true, atsResults: true },
-      extensions: ["seek", "indeed"],
+      extensions: ["indeed", "seek"],
     });
     expect(body).not.toHaveProperty("reason");
   });
@@ -81,7 +81,7 @@ describe("entitlementPayload per extension", () => {
       status: "active",
       interval: "monthly",
       features: { hideJobs: false, atsResults: false },
-      extensions: ["seek", "indeed"],
+      extensions: ["indeed", "seek"],
       reason: "extension_not_included",
     });
   });
@@ -110,7 +110,7 @@ describe("entitlementPayload per extension", () => {
     const body = await entitlementPayload({
       headers: new Headers(),
     } as unknown as NextRequest);
-    expect(body).toMatchObject({ plan: "pro", extensions: ["seek", "indeed"] });
+    expect(body).toMatchObject({ plan: "pro", extensions: ["indeed", "seek"] });
     expect(body).not.toHaveProperty("reason");
   });
 });

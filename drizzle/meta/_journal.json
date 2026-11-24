@@ -8,6 +8,20 @@
       "when": 1789742088728,
       "tag": "0000_add-ats-tables",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1795243807991,
+      "tag": "0001_add-subscription-extensions",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795362639453,
+      "tag": "0002_add-subscription-carry",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useEffect,
   useLayoutEffect,
   useRef,
   useState,
@@ -9,28 +10,35 @@ import {
 } from "react";
 import Link from "next/link";
 import { BtnSpinner, usePageShowReset } from "./BusyButton";
+import { ExtensionPick } from "./ExtensionPick";
 import { HeroInstallSplit } from "./HeroInstallSplit";
 import {
   IconCheckCircle,
   IconChevronDown,
   IconCoffee,
+  IconIcedCoffee,
+  IconMocktail,
   IconXCircle,
 } from "./icons";
-import { INDEED_CWS_URL, SEEK_CWS_URL } from "@/lib/cws";
+import { INDEED_CWS_URL, LINKEDIN_CWS_URL, SEEK_CWS_URL } from "@/lib/cws";
+import {
+  EXTENSIONS,
+  normalizeExtensionPicks,
+  type ExtensionClient,
+} from "@/lib/extensions";
 import { canStartSubscribe } from "@/lib/legal";
 import { pushBeginCheckout } from "@/lib/gtm";
 import { startPaddleCheckout } from "@/lib/paddle-checkout";
 import {
-  MONTHLY_AMOUNT,
-  YEARLY_AMOUNT,
-  canStartCheckout,
-  defaultPricingInterval,
+  PLANS,
   formatPrice,
-  pricingCardOrder,
-  pricingIntervalTabs,
-  pricingProCta,
-  yearlyDiscountPercent,
-  type BillingInterval,
+  planById,
+  planForPickCount,
+  proCardCta,
+  quarterlyDiscountPercent,
+  type CheckoutInterval,
+  type CurrentPlan,
+  type PlanPriceIds,
 } from "@/lib/pricing";
 
 const SLOT_CYCLES = 1;
@@ -66,7 +74,16 @@ function markSlotPlayed(id: string) {
   }
 }
 
-function SlotPrice({ value, slotId }: { value: string; slotId: string }) {
+/* `persist` limits the page-load spin to once per session; changes from the user always spin. */
+function SlotPrice({
+  value,
+  slotId,
+  persist,
+}: {
+  value: string;
+  slotId: string;
+  persist: boolean;
+}) {
   const ref = useRef<HTMLSpanElement>(null);
   const [armed, setArmed] = useState(false);
   const [spin, setSpin] = useState(false);
@@ -77,10 +94,9 @@ function SlotPrice({ value, slotId }: { value: string; slotId: string }) {
 
     clearLegacySlotCache();
 
-    const persistSlot = slotId !== "yearly";
     const skipMotion =
       window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
-      (persistSlot && hasPlayedSlot(slotId));
+      (persist && hasPlayedSlot(slotId));
 
     if (skipMotion) {
       setArmed(false);
@@ -93,7 +109,7 @@ function SlotPrice({ value, slotId }: { value: string; slotId: string }) {
 
     function play() {
       setSpin(true);
-      if (persistSlot) markSlotPlayed(slotId);
+      if (persist) markSlotPlayed(slotId);
     }
 
     const rect = el.getBoundingClientRect();
@@ -119,7 +135,7 @@ function SlotPrice({ value, slotId }: { value: string; slotId: string }) {
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [slotId]);
+  }, [slotId, persist]);
 
   const className = [
     "price-slot",
@@ -179,12 +195,10 @@ function SlotPrice({ value, slotId }: { value: string; slotId: string }) {
   );
 }
 
-type Interval = BillingInterval;
-
 const ATS_SCORE_FEATURE = "Score a resume against the job description";
 
 const FREE_FEATURES = [
-  "Published dates and interest counts",
+  "Published dates and interest counts on Indeed and Seek",
   "Copy JD and save jobs",
   "Local application board",
   "CSV export and local resume storage",
@@ -197,45 +211,36 @@ const FREE_UNAVAILABLE = [
 ];
 
 const PRO_FEATURES = ["Hide / Unhide job cards", "ATS score results"];
-const ATS_SCORE_LIMIT = "1,000";
+const ATS_SCORES_PER_MONTH = 1000;
 
-const PRO_BADGE = "Skip one coffee. Get Pro.";
+const PLAN_TAGLINES = {
+  lens: "Pro on the one job site you use most.",
+  bifocal: "Pro on the two job sites you search side by side.",
+  panorama: "Pro on Indeed, LinkedIn, and Seek. Nothing hidden.",
+} as const;
+
+const DRINK_BADGES = {
+  lens: "Skip one latte. Get Pro.",
+  bifocal: "Skip one Venti Frappuccino. Get Pro.",
+  panorama: "Skip one mocktail. Get Pro.",
+} as const;
+/* Keep in sync with the `pricing-cta-flash` animation duration in globals.css. */
+const FLASH_MS = 1600;
 
 export function PricingCards({
-  monthlyPriceId,
-  yearlyPriceId,
-  subscribedInterval,
+  priceIds,
+  current,
   isAuthenticated,
 }: {
-  monthlyPriceId: string;
-  yearlyPriceId: string;
-  subscribedInterval: Interval | null;
+  priceIds: PlanPriceIds;
+  current: CurrentPlan;
   isAuthenticated: boolean;
 }) {
-  const [interval, setInterval] = useState<Interval>(() =>
-    defaultPricingInterval(subscribedInterval),
-  );
-  const cardOrder = pricingCardOrder(isAuthenticated);
-  const intervalTabs = pricingIntervalTabs(subscribedInterval);
-  const [freeIncludedOpen, setFreeIncludedOpen] = useState(true);
-  const [pending, setPending] = useState(false);
-  usePageShowReset(setPending);
-  const [agreedToLegal, setAgreedToLegal] = useState(false);
-  const [error, setError] = useState("");
+  const [interval, setInterval] = useState<CheckoutInterval>("monthly");
+  const [touched, setTouched] = useState(false);
   const toggleRef = useRef<HTMLDivElement>(null);
   const [thumb, setThumb] = useState({ left: 0, width: 0 });
-  const yearlyOff = yearlyDiscountPercent();
-  const proPrice =
-    interval === "monthly"
-      ? formatPrice(MONTHLY_AMOUNT)
-      : formatPrice(YEARLY_AMOUNT);
-  const proPeriod = interval === "monthly" ? "Monthly" : "Yearly";
-  const priceId = interval === "monthly" ? monthlyPriceId : yearlyPriceId;
-  const cta = pricingProCta({
-    subscribedInterval,
-    selectedInterval: interval,
-    pending,
-  });
+  const quarterlyOff = quarterlyDiscountPercent(PLANS[0]);
 
   useLayoutEffect(() => {
     const root = toggleRef.current;
@@ -259,38 +264,30 @@ export function PricingCards({
       observer.observe(option);
     }
     return () => observer.disconnect();
-  }, [interval, subscribedInterval, yearlyOff]);
+  }, [interval, quarterlyOff]);
+
+  function chooseInterval(next: CheckoutInterval) {
+    setTouched(true);
+    setInterval(next);
+  }
 
   function onToggleKeyDown(e: KeyboardEvent<HTMLDivElement>) {
     if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
     e.preventDefault();
-    setInterval((current) => (current === "monthly" ? "yearly" : "monthly"));
+    chooseInterval(interval === "monthly" ? "quarterly" : "monthly");
   }
 
-  async function subscribe() {
-    if (!canStartCheckout(subscribedInterval, interval)) return;
-    setError("");
-    if (!canStartSubscribe(agreedToLegal)) {
-      setError("Please agree to the Terms of Service and Refund Policy.");
-      return;
-    }
-    setPending(true);
-    const result = await startPaddleCheckout(priceId);
-    if (result.status === "ok") {
-      pushBeginCheckout({
-        interval,
-        value: interval === "monthly" ? MONTHLY_AMOUNT : YEARLY_AMOUNT,
-      });
-    }
-    if (result.status === "login") {
-      window.location.href = "/signup?next=/pricing";
-      return;
-    }
-    if (result.status === "error") {
-      setError(result.message);
-    }
-    setPending(false);
-  }
+  const freeCard = <FreeCard key="free" />;
+  const proCard = (
+    <ProCard
+      key="pro"
+      interval={interval}
+      priceIds={priceIds}
+      current={current}
+      touched={touched}
+      onTouch={() => setTouched(true)}
+    />
+  );
 
   return (
     <div className="col-span-12 px-5 py-10 md:px-6 md:py-16">
@@ -315,208 +312,334 @@ export function PricingCards({
             }
           />
         ) : null}
-        {intervalTabs.map((tab) => (
+        {(["monthly", "quarterly"] as const).map((tab) => (
           <button
             key={tab}
             type="button"
             role="radio"
             aria-checked={interval === tab}
             className="pricing-toggle-option"
-            onClick={() => setInterval(tab)}
+            onClick={() => chooseInterval(tab)}
           >
-            {tab === "monthly" ? "Monthly" : "Yearly"}
-            {tab === "yearly" && yearlyOff > 0 ? (
-              <span className="pricing-toggle-save">-{yearlyOff}%</span>
+            {tab === "monthly" ? "Monthly" : "Quarterly"}
+            {tab === "quarterly" && quarterlyOff > 0 ? (
+              <span className="pricing-toggle-save">-{quarterlyOff}%</span>
             ) : null}
           </button>
         ))}
       </div>
 
       <div className="mx-auto mt-8 grid w-full items-stretch gap-5 md:w-[90%] md:grid-cols-12">
-        {cardOrder.map((card) =>
-          card === "free" ? (
-            <article key="free" className="pricing-card md:col-span-6">
-              <div className="pricing-card-head pricing-card-head-free">
-                <h2 className="text-[17px] font-medium tracking-tight">Free</h2>
-                <p className="pricing-card-price tabular-nums">
-                  <span>$0</span>
-                  <span className="pricing-card-period">/forever</span>
-                </p>
-                <p className="pricing-card-tagline">
-                  Track Indeed and Seek without paying. Metrics, save, and a local
-                  board.
-                </p>
-                <HeroInstallSplit
-                  variant="fill"
-                  buttonClassName="pricing-card-cta pricing-card-cta-secondary"
-                  seekUrl={SEEK_CWS_URL}
-                  indeedUrl={INDEED_CWS_URL}
-                />
-              </div>
-              <ul className="pricing-card-features">
-                {FREE_FEATURES.map((feature) => (
-                  <li key={feature}>
-                    <IconCheckCircle className="pricing-card-check" />
-                    {feature}
-                  </li>
-                ))}
-                {FREE_UNAVAILABLE.map((feature) => (
-                  <li key={feature} className="is-unavailable">
-                    <IconXCircle className="pricing-card-cross" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-            </article>
-          ) : (
-            <article key="pro" className="pricing-card md:col-span-6">
-              <div className="pricing-card-head pricing-card-head-pro">
-                <div className="pricing-card-title">
-                  <h2 className="text-[17px] font-medium tracking-tight">Pro</h2>
-                  <div
-                    className={
-                      interval === "monthly"
-                        ? "pricing-card-badge-slot is-in"
-                        : "pricing-card-badge-slot"
-                    }
-                    aria-hidden={interval !== "monthly"}
-                  >
-                    <span className="pricing-card-badge">
-                      <IconCoffee className="pricing-card-badge-icon" />
-                      {PRO_BADGE}
-                    </span>
-                  </div>
-                </div>
-                <p className="pricing-card-price tabular-nums">
-                  <SlotPrice key={interval} value={proPrice} slotId={interval} />
-                  <span className="pricing-card-period">
-                    <span key={proPeriod} className="pricing-card-period-text">
-                      /{proPeriod}
-                    </span>
-                  </span>
-                </p>
-                <p className="pricing-card-tagline">
-                  Best for people who want to hide listings and score a resume
-                  against the JD.
-                </p>
-                <button
-                  type="button"
-                  className={
-                    cta.label === "Subscribed"
-                      ? "pricing-card-cta is-subscribed"
-                      : "pricing-card-cta"
-                  }
-                  data-price-id={priceId}
-                  disabled={cta.disabled}
-                  aria-busy={pending || undefined}
-                  onClick={subscribe}
-                >
-                  {pending ? <BtnSpinner /> : null}
-                  {cta.label}
-                </button>
-                {cta.showLegal ? (
-                  <div className="pricing-legal-block">
-                    <label className="pricing-legal">
-                      <input
-                        type="checkbox"
-                        checked={agreedToLegal}
-                        aria-describedby={error ? "pricing-legal-error" : undefined}
-                        onChange={(event) => {
-                          setAgreedToLegal(event.target.checked);
-                          if (event.target.checked) setError("");
-                        }}
-                      />
-                      <span>
-                        I agree to the{" "}
-                        <Link
-                          href="/terms"
-                          onClick={(event) => event.stopPropagation()}
-                        >
-                          Terms of Service
-                        </Link>{" "}
-                        and{" "}
-                        <Link
-                          href="/refunds"
-                          onClick={(event) => event.stopPropagation()}
-                        >
-                          Refund Policy
-                        </Link>
-                        .
-                      </span>
-                    </label>
-                    {error ? (
-                      <p
-                        id="pricing-legal-error"
-                        className="pricing-legal-error"
-                        role="alert"
-                      >
-                        {error}
-                      </p>
-                    ) : null}
-                  </div>
-                ) : error ? (
-                  <p className="pricing-legal-error" role="alert">
-                    {error}
-                  </p>
-                ) : null}
-              </div>
-              <ul className="pricing-card-features">
-                <li className="pricing-included">
-                  <button
-                    type="button"
-                    className={
-                      freeIncludedOpen
-                        ? "pricing-included-toggle is-open"
-                        : "pricing-included-toggle"
-                    }
-                    aria-expanded={freeIncludedOpen}
-                    aria-controls="pricing-free-included"
-                    onClick={() => setFreeIncludedOpen((open) => !open)}
-                  >
-                    <IconCheckCircle className="pricing-card-check" />
-                    <span>Everything in Free</span>
-                    <IconChevronDown className="pricing-included-chevron" />
-                  </button>
-                  <div
-                    id="pricing-free-included"
-                    className={
-                      freeIncludedOpen
-                        ? "pricing-included-panel is-open"
-                        : "pricing-included-panel"
-                    }
-                    aria-hidden={!freeIncludedOpen}
-                  >
-                    <div className="pricing-included-clip">
-                      <ul className="pricing-included-list">
-                        {FREE_FEATURES.map((feature) => (
-                          <li key={feature}>{feature}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </li>
-                {PRO_FEATURES.map((feature) => (
-                  <li key={feature}>
-                    <IconCheckCircle className="pricing-card-check" />
-                    {feature}
-                  </li>
-                ))}
-                <li>
-                  <IconCheckCircle className="pricing-card-check" />
-                  <span>
-                    {ATS_SCORE_FEATURE}
-                    <sup className="pricing-card-mark">*</sup>
-                  </span>
-                </li>
-              </ul>
-              <p className="pricing-card-limit">
-                * Up to {ATS_SCORE_LIMIT} ATS scores per{" "}
-                {interval === "monthly" ? "month" : "year"}.
-              </p>
-            </article>
-          ),
-        )}
+        {isAuthenticated ? [proCard, freeCard] : [freeCard, proCard]}
       </div>
     </div>
+  );
+}
+
+function FreeCard() {
+  return (
+    <article className="pricing-card md:col-span-6">
+      <div className="pricing-card-head pricing-card-head-free">
+        <h2 className="text-[17px] font-medium tracking-tight">Free</h2>
+        <p className="pricing-card-price tabular-nums">
+          <span>$0</span>
+          <span className="pricing-card-period">/forever</span>
+        </p>
+        <p className="pricing-card-tagline">
+          Track every job site without paying. Metrics, save, and a local board.
+        </p>
+        <HeroInstallSplit
+          variant="fill"
+          buttonClassName="pricing-card-cta pricing-card-cta-secondary"
+          indeedUrl={INDEED_CWS_URL}
+          linkedinUrl={LINKEDIN_CWS_URL}
+          seekUrl={SEEK_CWS_URL}
+        />
+      </div>
+      <ul className="pricing-card-features">
+        {FREE_FEATURES.map((feature) => (
+          <li key={feature}>
+            <IconCheckCircle className="pricing-card-check" />
+            {feature}
+          </li>
+        ))}
+        {FREE_UNAVAILABLE.map((feature) => (
+          <li key={feature} className="is-unavailable">
+            <IconXCircle className="pricing-card-cross" />
+            {feature}
+          </li>
+        ))}
+      </ul>
+    </article>
+  );
+}
+
+function ProCard({
+  interval,
+  priceIds,
+  current,
+  touched,
+  onTouch,
+}: {
+  interval: CheckoutInterval;
+  priceIds: PlanPriceIds;
+  current: CurrentPlan;
+  touched: boolean;
+  onTouch: () => void;
+}) {
+  const [picks, setPicks] = useState<ExtensionClient[]>(() =>
+    current ? normalizeExtensionPicks(current.extensions) : [],
+  );
+  const [pending, setPending] = useState(false);
+  usePageShowReset(setPending);
+  const [agreedToLegal, setAgreedToLegal] = useState(false);
+  const [includedOpen, setIncludedOpen] = useState(true);
+  const [error, setError] = useState("");
+
+  const plan = current ? planById(current.plan) : planForPickCount(picks.length);
+  const amount = plan[interval];
+  const priceId = priceIds[plan.id][interval];
+  const cta = proCardCta({ current, picked: picks.length, pending });
+  const locked = Boolean(current) || pending;
+  const [flash, setFlash] = useState<{ id: number; text: string } | null>(null);
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flashCount = useRef(0);
+  useEffect(() => () => {
+    if (flashTimer.current) clearTimeout(flashTimer.current);
+  }, []);
+  const badge = interval === "monthly" ? DRINK_BADGES[plan.id] : "";
+  const atsLimit = (
+    ATS_SCORES_PER_MONTH * (interval === "quarterly" ? 3 : 1)
+  ).toLocaleString("en-US");
+
+  function clearFlash() {
+    if (flashTimer.current) clearTimeout(flashTimer.current);
+    flashTimer.current = null;
+    setFlash(null);
+  }
+
+  function showAddOnHint(count: number) {
+    clearFlash();
+    if (count < 1 || count >= PLANS.length) return;
+    const diff = planForPickCount(count + 1)[interval] - planForPickCount(count)[interval];
+    flashCount.current += 1;
+    setFlash({
+      id: flashCount.current,
+      text: `Add another for +${formatPrice(Number(diff.toFixed(2)))}`,
+    });
+    flashTimer.current = setTimeout(() => setFlash(null), FLASH_MS);
+  }
+
+  function togglePick(client: ExtensionClient) {
+    onTouch();
+    setError("");
+    if (picks.includes(client)) {
+      clearFlash();
+      setPicks(picks.filter((pick) => pick !== client));
+      return;
+    }
+    setPicks([...picks, client]);
+    showAddOnHint(picks.length + 1);
+  }
+
+  async function subscribe() {
+    if (cta.disabled) return;
+    clearFlash();
+    setError("");
+    if (!canStartSubscribe(agreedToLegal)) {
+      setError("Please agree to the Terms of Service and Refund Policy.");
+      return;
+    }
+    setPending(true);
+    const result = await startPaddleCheckout(priceId, picks);
+    if (result.status === "ok") {
+      pushBeginCheckout({ interval, plan: plan.id, value: amount });
+    }
+    if (result.status === "login") {
+      window.location.assign("/signup?next=/pricing");
+      return;
+    }
+    if (result.status === "error") {
+      setError(result.message);
+    }
+    setPending(false);
+  }
+
+  return (
+    <article className="pricing-card md:col-span-6">
+      <div className="pricing-card-head pricing-card-head-pro">
+        <div className="pricing-card-title">
+          <h2 className="text-[17px] font-medium tracking-tight" aria-live="polite">
+            Pro{" "}
+            <span key={plan.id} className="pricing-card-period-text pricing-plan-name">
+              {plan.name}
+            </span>
+          </h2>
+          <div
+            className={badge ? "pricing-card-badge-slot is-in" : "pricing-card-badge-slot"}
+            aria-hidden={!badge}
+          >
+            {badge ? (
+              <span key={badge} className="pricing-card-badge">
+                {plan.id === "panorama" ? (
+                  <IconMocktail className="pricing-card-badge-icon" />
+                ) : plan.id === "bifocal" ? (
+                  <IconIcedCoffee className="pricing-card-badge-icon" />
+                ) : (
+                  <IconCoffee className="pricing-card-badge-icon" />
+                )}
+                {badge}
+              </span>
+            ) : null}
+          </div>
+        </div>
+        <p className="pricing-card-price tabular-nums">
+          <SlotPrice
+            key={`${plan.id}-${interval}`}
+            value={formatPrice(amount)}
+            slotId={`pro-${plan.id}-${interval}`}
+            persist={!touched}
+          />
+          <span className="pricing-card-period">
+            <span key={interval} className="pricing-card-period-text">
+              /{interval === "monthly" ? "Monthly" : "Quarterly"}
+            </span>
+          </span>
+        </p>
+        <p className="pricing-card-tagline pricing-card-tagline-fixed">
+          <span key={plan.id} className="pricing-card-period-text">
+            {PLAN_TAGLINES[plan.id]}
+          </span>
+        </p>
+
+        <button
+          type="button"
+          className={current ? "pricing-card-cta is-subscribed" : "pricing-card-cta"}
+          data-price-id={priceId}
+          disabled={cta.disabled}
+          aria-busy={pending || undefined}
+          aria-label={cta.label}
+          onClick={subscribe}
+        >
+          {pending ? <BtnSpinner /> : null}
+          <span
+            key={flash ? `flash-${flash.id}` : cta.label}
+            className={flash ? "pricing-cta-label is-flash" : "pricing-cta-label"}
+          >
+            {flash ? flash.text : cta.label}
+          </span>
+        </button>
+        <span className="sr-only" aria-live="polite">
+          {flash?.text ?? ""}
+        </span>
+
+        <fieldset className="pricing-picks" disabled={locked}>
+          <legend className="pricing-picks-legend">
+            {current ? "Extensions on your plan" : "Choose your extensions"}
+          </legend>
+          {EXTENSIONS.map((ext) => (
+            <ExtensionPick
+              key={ext.client}
+              name={ext.name}
+              checked={picks.includes(ext.client)}
+              onToggle={() => togglePick(ext.client)}
+            />
+          ))}
+        </fieldset>
+        {current ? (
+          <p className="pricing-card-note">
+            {current.legacy
+              ? "Legacy $4.99 price, kept while you stay on this plan. "
+              : ""}
+            <Link href="/account?change=plan" className="underline underline-offset-2">
+              Change your plan from your account.
+            </Link>
+          </p>
+        ) : null}
+        {cta.showLegal ? (
+          <div className="pricing-legal-block">
+            <label className="pricing-legal">
+              <input
+                type="checkbox"
+                checked={agreedToLegal}
+                aria-describedby={error ? "pricing-legal-error" : undefined}
+                onChange={(event) => {
+                  setAgreedToLegal(event.target.checked);
+                  if (event.target.checked) setError("");
+                }}
+              />
+              <span>
+                I agree to the{" "}
+                <Link href="/terms" onClick={(event) => event.stopPropagation()}>
+                  Terms of Service
+                </Link>{" "}
+                and{" "}
+                <Link href="/refunds" onClick={(event) => event.stopPropagation()}>
+                  Refund Policy
+                </Link>
+                .
+              </span>
+            </label>
+            {error ? (
+              <p id="pricing-legal-error" className="pricing-legal-error" role="alert">
+                {error}
+              </p>
+            ) : null}
+          </div>
+        ) : error ? (
+          <p className="pricing-legal-error" role="alert">
+            {error}
+          </p>
+        ) : null}
+      </div>
+      <ul className="pricing-card-features">
+        <li className="pricing-included">
+          <button
+            type="button"
+            className={
+              includedOpen ? "pricing-included-toggle is-open" : "pricing-included-toggle"
+            }
+            aria-expanded={includedOpen}
+            aria-controls="pricing-free-included"
+            onClick={() => setIncludedOpen((open) => !open)}
+          >
+            <IconCheckCircle className="pricing-card-check" />
+            <span>Everything in Free</span>
+            <IconChevronDown className="pricing-included-chevron" />
+          </button>
+          <div
+            id="pricing-free-included"
+            className={
+              includedOpen ? "pricing-included-panel is-open" : "pricing-included-panel"
+            }
+            aria-hidden={!includedOpen}
+          >
+            <div className="pricing-included-clip">
+              <ul className="pricing-included-list">
+                {FREE_FEATURES.map((feature) => (
+                  <li key={feature}>{feature}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </li>
+        {PRO_FEATURES.map((feature) => (
+          <li key={feature}>
+            <IconCheckCircle className="pricing-card-check" />
+            {feature}
+          </li>
+        ))}
+        <li>
+          <IconCheckCircle className="pricing-card-check" />
+          <span>
+            {ATS_SCORE_FEATURE}
+            <sup className="pricing-card-mark">*</sup>
+          </span>
+        </li>
+      </ul>
+      <p className="pricing-card-limit">
+        * Up to {atsLimit} ATS scores per {interval === "monthly" ? "month" : "quarter"}.
+      </p>
+    </article>
   );
 }

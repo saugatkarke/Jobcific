@@ -2,17 +2,22 @@ import { describe, expect, it } from "vitest";
 import {
   EXTENSIONS,
   extensionClientForRedirectUri,
+  extensionNames,
   isExtensionClient,
   syncedAgoLabel,
 } from "./extensions";
-import { INDEED_CWS_URL, SEEK_CWS_URL } from "./cws";
+import { INDEED_CWS_URL, LINKEDIN_CWS_URL, SEEK_CWS_URL } from "./cws";
 
 describe("extension registry", () => {
-  it("lists Seek, Indeed and LinkedIn with their store links", () => {
-    expect(EXTENSIONS.map((ext) => ext.client)).toEqual(["seek", "indeed", "linkedin"]);
-    expect(EXTENSIONS[0].cwsUrl).toBe(SEEK_CWS_URL);
-    expect(EXTENSIONS[1].cwsUrl).toBe(INDEED_CWS_URL);
-    expect(EXTENSIONS[2].cwsUrl).toBeNull();
+  it("lists Indeed, LinkedIn and Seek with their store links", () => {
+    expect(EXTENSIONS.map((ext) => ext.client)).toEqual(["indeed", "linkedin", "seek"]);
+    expect(EXTENSIONS[0].cwsUrl).toBe(INDEED_CWS_URL);
+    expect(EXTENSIONS[1].cwsUrl).toBe(LINKEDIN_CWS_URL);
+    expect(EXTENSIONS[2].cwsUrl).toBe(SEEK_CWS_URL);
+  });
+
+  it("names extensions in display order whatever order they were stored in", () => {
+    expect(extensionNames(["seek", "linkedin", "indeed"])).toEqual(["Indeed", "LinkedIn", "Seek"]);
   });
 
   it("treats linkedin as a known extension client", () => {
@@ -32,6 +37,9 @@ describe("extension registry", () => {
     expect(
       extensionClientForRedirectUri("https://mamnkbcandbeclhpambinlemkfggkcok.chromiumapp.org/"),
     ).toBe("indeed");
+    expect(
+      extensionClientForRedirectUri("https://hpclhkcflhmngpkgjpkogkhmeboadnmb.chromiumapp.org/"),
+    ).toBe("linkedin");
     expect(
       extensionClientForRedirectUri("https://gefachkggkhiiolgngplghiemhfbbjae.chromiumapp.org/"),
     ).toBe("linkedin");

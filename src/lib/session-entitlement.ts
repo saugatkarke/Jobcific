@@ -10,7 +10,14 @@ import {
   resolveEntitlement,
 } from "./entitlement";
 import { verifyAccessJwt, type AccessClaims } from "./extension-auth";
-import { intervalFromPriceId, type BillingInterval } from "./pricing";
+import type { ExtensionClient } from "./extensions";
+import { scheduledChange, withEffectivePlan, type ScheduledChange } from "./plan-change";
+import {
+  priceInfo,
+  type BillingInterval,
+  type CurrentPlan,
+  type PriceInfo,
+} from "./pricing";
 import { subscription } from "./schema";
 import { getOptionalSession } from "./session";
 
@@ -34,17 +41,16 @@ export async function latestSubscriptionRow(userId: string) {
   return rows[0] ?? null;
 }
 
-export function proBillingIntervalFromRow(
-  row:
-    | {
-        plan: string;
-        status: string;
-        currentPeriodEnd: Date | string | null;
-        paddlePriceId: string;
-      }
-    | null
-    | undefined,
-): BillingInterval | null {
+type SubscriptionRowLike = {
+  plan: string;
+  status: string;
+  currentPeriodEnd: Date | string | null;
+  paddlePriceId: string;
+};
+
+export function proPriceFromRow(
+  row: SubscriptionRowLike | null | undefined,
+): PriceInfo | null {
   if (!row) return null;
   const resolved = resolveEntitlement({
     plan: row.plan,
@@ -52,18 +58,27 @@ export function proBillingIntervalFromRow(
     currentPeriodEnd: row.currentPeriodEnd,
   });
   if (resolved.plan !== "pro") return null;
-  return intervalFromPriceId(row.paddlePriceId);
+  return priceInfo(row.paddlePriceId);
 }
 
-export async function currentProBillingInterval(
-  headers: Headers,
-): Promise<BillingInterval | null> {
+export function proBillingIntervalFromRow(
+  row: SubscriptionRowLike | null | undefined,
+): BillingInterval | null {
+  return proPriceFromRow(row)?.interval ?? null;
+}
+
+export async function currentPlan(headers: Headers): Promise<CurrentPlan> {
   try {
     const session = await getOptionalSession(headers);
     if (!session?.user) return null;
-    return proBillingIntervalFromRow(
-      await latestSubscriptionRow(session.user.id),
-    );
+    const row = withEffectivePlan(await latestSubscriptionRow(session.user.id));
+    const price = proPriceFromRow(row);
+    if (!price || !row) return null;
+    return {
+      plan: price.plan,
+      legacy: price.legacy,
+      extensions: entitledExtensions(resolveEntitlement(row), row),
+    };
   } catch {
     return null;
   }
@@ -87,8 +102,7 @@ export async function entitlementPayload(req: NextRequest) {
       authenticated: false,
       email: null,
       ...emptyEntitlement(),
-      interval: null,
-      extensions: [],
+      ...noPlan(),
     };
   }
 
@@ -109,12 +123,12 @@ export async function entitlementForUser(userId: string, email: string | null) {
       authenticated: true,
       email,
       ...emptyEntitlement(),
-      interval: null,
-      extensions: [],
+      ...noPlan(),
     };
   }
 
-  const row = await latestSubscriptionRow(userId);
+  const stored = await latestSubscriptionRow(userId);
+  const row = withEffectivePlan(stored);
   const resolved = resolveEntitlement(
     row
       ? {
@@ -124,11 +138,27 @@ export async function entitlementForUser(userId: string, email: string | null) {
         }
       : null,
   );
+  const price = proPriceFromRow(row);
   return {
     authenticated: true,
     email,
     ...resolved,
-    interval: proBillingIntervalFromRow(row),
-    extensions: entitledExtensions(resolved),
+    interval: price?.interval ?? null,
+    planId: price?.plan ?? null,
+    legacy: price?.legacy ?? false,
+    extensions: entitledExtensions(resolved, row),
+    cancelAtPeriodEnd: Boolean(stored?.cancelAtPeriodEnd),
+    scheduledChange: price ? scheduledChange(stored) : null,
+  };
+}
+
+function noPlan() {
+  return {
+    interval: null,
+    planId: null,
+    legacy: false,
+    extensions: [] as ExtensionClient[],
+    cancelAtPeriodEnd: false,
+    scheduledChange: null as ScheduledChange | null,
   };
 }

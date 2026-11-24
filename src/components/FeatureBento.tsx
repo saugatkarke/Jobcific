@@ -136,7 +136,7 @@ function HideMock() {
     <div className="space-y-2">
       <ListingCard
         title="Data Engineer"
-        meta="Indeed · Sydney"
+        meta="LinkedIn · Berlin"
         chips={<Chip tone="date">4d ago</Chip>}
         action={
           <span className="inline-flex shrink-0 items-center gap-1 rounded-[4px] bg-black px-2 py-1 text-[11px] text-white">
@@ -147,7 +147,7 @@ function HideMock() {
       />
       <ListingCard
         title="Product Manager"
-        meta="Seek · Melbourne"
+        meta="LinkedIn · Singapore"
         faded
         chips={<Chip tone="muted">Hidden</Chip>}
       />
@@ -166,23 +166,23 @@ export function FeatureBento() {
       >
         <CardStack label="Example salary listings">
           <ListingCard
-            title="Frontend Engineer"
-            meta="Seek · Melbourne"
+            title="Software Engineer"
+            meta="Indeed · London"
             chips={
               <>
-                <Chip tone="salary">$128k–$145k</Chip>
+                <Chip tone="salary">£75k-£90k</Chip>
               </>
             }
           />
           <ListingCard
-            title="Data Engineer"
-            meta="Indeed · Sydney"
-            chips={<Chip tone="salary">$110k–$130k</Chip>}
+            title="Data Analyst"
+            meta="Indeed · New York"
+            chips={<Chip tone="salary">$95k-$120k</Chip>}
           />
           <ListingCard
             title="Product Manager"
             meta="Seek · Auckland"
-            chips={<Chip tone="salary">$140k–$165k</Chip>}
+            chips={<Chip tone="salary">NZ$140k-$165k</Chip>}
           />
         </CardStack>
       </Tile>
@@ -190,23 +190,23 @@ export function FeatureBento() {
       <Tile
         className="min-h-[220px] md:col-span-4"
         title="Applicants"
-        body="See how many people are already interested before you apply."
+        body="See how many people are already interested on Indeed and Seek before you apply."
         decorative={false}
       >
         <CardStack label="Example applicant counts">
           <ListingCard
-            title="Frontend Engineer"
-            meta="Indeed · Brisbane"
+            title="UX Designer"
+            meta="Indeed · Toronto"
             chips={<Chip tone="interest">12 interested</Chip>}
           />
           <ListingCard
-            title="Data Engineer"
-            meta="Seek · Sydney"
+            title="Marketing Manager"
+            meta="Indeed · Manchester"
             chips={<Chip tone="interest">7 interested</Chip>}
           />
           <ListingCard
-            title="Product Manager"
-            meta="Indeed · Melbourne"
+            title="Registered Nurse"
+            meta="Seek · Sydney"
             chips={<Chip tone="interest">19 interested</Chip>}
           />
         </CardStack>
@@ -215,23 +215,23 @@ export function FeatureBento() {
       <Tile
         className="min-h-[220px] md:col-span-4"
         title="Date published"
-        body="Know if a role is two days old, two weeks old, or months old."
+        body="On Indeed and Seek, know if a role is two days old, two weeks old, or months old."
         decorative={false}
       >
         <CardStack label="Example published dates">
           <ListingCard
             title="Frontend Engineer"
-            meta="Indeed · Auckland"
+            meta="Indeed · San Francisco"
             chips={<Chip tone="date">2d ago</Chip>}
           />
           <ListingCard
-            title="Data Engineer"
-            meta="Seek · Wellington"
+            title="Account Executive"
+            meta="Indeed · Vancouver"
             chips={<Chip tone="date">4d ago</Chip>}
           />
           <ListingCard
-            title="Product Manager"
-            meta="Indeed · Perth"
+            title="Project Manager"
+            meta="Seek · Wellington"
             chips={<Chip tone="date">1w ago</Chip>}
           />
         </CardStack>

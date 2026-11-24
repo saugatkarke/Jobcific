@@ -4,6 +4,7 @@ import {
   checkoutNotice,
   needsEntitlementFetch,
   planStatusLabel,
+  planSummary,
 } from "./account-entitlement";
 
 const pro = { plan: "pro" as const, status: "active" };
@@ -36,6 +37,20 @@ describe("checkoutNotice", () => {
   it("stays empty outside checkout", () => {
     expect(checkoutNotice(false, null)).toBe("");
     expect(checkoutNotice(false, free)).toBe("");
+  });
+});
+
+describe("planSummary", () => {
+  it("names the plan and its extensions", () => {
+    expect(
+      planSummary({ ...pro, planId: "bifocal", extensions: ["seek", "indeed"] }),
+    ).toBe("Bifocal (Indeed, Seek)");
+    expect(planSummary({ ...pro, planId: "lens", extensions: [] })).toBe("Lens");
+  });
+
+  it("is empty when the plan is unknown or free", () => {
+    expect(planSummary(pro)).toBe("");
+    expect(planSummary({ ...free, planId: "lens" })).toBe("");
   });
 });
 

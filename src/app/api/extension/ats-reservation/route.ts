@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { atsPeriodLimit } from "@/lib/ats-period-limit";
 import { reserveAtsUsage } from "@/lib/ats-quota";
 import { signAtsReservation } from "@/lib/ats-reservation";
+import { withEffectivePlan } from "@/lib/plan-change";
+import { intervalFromPriceId, monthsInInterval } from "@/lib/pricing";
 import {
   EXTENSION_NOT_INCLUDED,
   entitledExtensions,
@@ -57,7 +59,7 @@ export async function POST(req: NextRequest) {
 
   let row;
   try {
-    row = await latestSubscriptionRow(claims.sub);
+    row = withEffectivePlan(await latestSubscriptionRow(claims.sub));
   } catch {
     return errorResponse("INTERNAL_ERROR");
   }
@@ -81,7 +83,7 @@ export async function POST(req: NextRequest) {
   ) {
     return errorResponse("PRO_REQUIRED");
   }
-  if (!isClientEntitled(claims.client, entitledExtensions(resolved))) {
+  if (!isClientEntitled(claims.client, entitledExtensions(resolved, row))) {
     return errorResponse("PRO_REQUIRED", { reason: EXTENSION_NOT_INCLUDED });
   }
 
@@ -96,7 +98,9 @@ export async function POST(req: NextRequest) {
     const allowance = await reserveAtsUsage({
       userId: claims.sub,
       periodEnd,
-      limit: atsPeriodLimit(),
+      limit:
+        atsPeriodLimit() *
+        monthsInInterval(intervalFromPriceId(row?.paddlePriceId ?? "") ?? "monthly"),
     });
     const publicAllowance = {
       limit: allowance.limit,

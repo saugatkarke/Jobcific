@@ -25,13 +25,13 @@ export default function PrivacyPage() {
         This policy explains how {sellerIdentity()} (“we”, “us”) handles
         personal information when you use {APP_NAME} at{" "}
         <Link href="/">jobcific.com</Link>, create an account, subscribe to Pro,
-        or connect an Indeed, Seek, or LinkedIn Chrome extension. Not affiliated
-        with Indeed, Seek, or LinkedIn.
+        or connect an Indeed, LinkedIn, or Seek Chrome extension. Not affiliated
+        with Indeed, LinkedIn, or Seek.
       </p>
 
       <h2>1. Who we are</h2>
       <p>
-        {APP_NAME} is a job-tracking product for Indeed, Seek, and LinkedIn. The
+        {APP_NAME} is a job-tracking product for Indeed, LinkedIn, and Seek. The
         website provides accounts, Pro billing, and cloud ATS resume scoring.
         The Chrome extensions track jobs locally in your browser. For privacy
         questions,
@@ -61,8 +61,8 @@ export default function PrivacyPage() {
         </li>
         <li>
           ATS scoring content: when cloud ATS scoring runs, we receive the
-          resume text and job description text for that request, plus the Seek,
-          Indeed, or LinkedIn job identifier. See section 4 for how that works.
+          resume text and job description text for that request, plus the
+          Indeed, LinkedIn, or Seek job identifier. See section 4 for how that works.
         </li>
         <li>
           ATS usage counts: the number of ATS scores reserved in your current
@@ -140,7 +140,7 @@ export default function PrivacyPage() {
 
       <h2>8. Chrome extension</h2>
       <p>
-        The Indeed, Seek, and LinkedIn extensions store your tracked jobs,
+        The Indeed, LinkedIn, and Seek extensions store your tracked jobs,
         hidden jobs, board state, and your uploaded resume text on your device.
         An extension contacts this website to read whether your plan is Pro or
         Free and, for cloud ATS scoring only, to send the resume and job text

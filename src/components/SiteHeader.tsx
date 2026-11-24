@@ -1,8 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { GridBand } from "./PageGrid";
-import { IconLogout, IconStar } from "./icons";
+import { IconLogout } from "./icons";
 import { BtnSpinner, PendingLink } from "./BusyButton";
 import { Logo } from "./Logo";
 import { useSession } from "./SessionProvider";
@@ -10,28 +11,32 @@ import { Skeleton, SkeletonBlock } from "./Skeleton";
 import { UserAvatar } from "./UserAvatar";
 import { APP_NAME } from "@/lib/copy";
 
+function Laurel({ side }: { side: "left" | "right" }) {
+  return (
+    <Image
+      src={`/laurel-${side}.png`}
+      alt=""
+      width={side === "left" ? 49 : 50}
+      height={96}
+      unoptimized
+      draggable={false}
+      className={`header-rating-laurel header-rating-laurel--${side}`}
+    />
+  );
+}
+
 function HeaderRating() {
   return (
-    <span className="header-rating hidden md:inline-flex" aria-label="5 star rating">
-      <span className="header-rating-stars" aria-hidden>
-        {Array.from({ length: 5 }, (_, index) => (
-          <span key={index} className="header-rating-star-cell">
-            <IconStar
-              gradient
-              gradientId={`header-star-gradient-${index}`}
-              className={
-                index === 0
-                  ? "header-rating-star header-rating-star--lead"
-                  : "header-rating-star"
-              }
-            />
-          </span>
-        ))}
+    <span
+      className="header-rating hidden md:inline-flex"
+      role="img"
+      aria-label="Rated 5.0 out of 5"
+    >
+      <Laurel side="left" />
+      <span className="header-rating-score" aria-hidden>
+        5.0
       </span>
-      <span className="header-rating-label">
-        <span className="header-rating-count">5</span>
-        <span className="header-rating-copy">star rating</span>
-      </span>
+      <Laurel side="right" />
     </span>
   );
 }

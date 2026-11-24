@@ -13,7 +13,7 @@ export function SiteFooter() {
           <Logo />
         </div>
         <p className="mt-3 text-sm text-[var(--muted)]">
-          Track Indeed, Seek, and LinkedIn applications locally. Upgrade here for
+          Track Indeed, LinkedIn, and Seek applications locally. Upgrade here for
           Hide jobs and ATS results.
         </p>
         <div className="mt-4">
@@ -84,7 +84,7 @@ export function SiteFooter() {
         </ul>
       </div>
       <p className="col-span-12 border-t border-[var(--line)] px-4 py-4 text-center text-xs text-[var(--muted)]">
-        Not affiliated with Indeed, Seek, or LinkedIn.
+        Not affiliated with Indeed, LinkedIn, or Seek.
       </p>
     </GridBand>
   );

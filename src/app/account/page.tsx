@@ -8,7 +8,11 @@ import {
 } from "@/components/AccountClient";
 import { MarketingShell } from "@/components/MarketingShell";
 import { GridBand } from "@/components/PageGrid";
-import type { AccountEntitlement } from "@/lib/account-entitlement";
+import {
+  toAccountEntitlement,
+  type AccountEntitlement,
+} from "@/lib/account-entitlement";
+import { planPriceIds } from "@/lib/pricing";
 import { viewerAvatarUrl } from "@/lib/avatar";
 import { avatarColorForUrl } from "@/lib/avatar-render";
 import { listExtensionConnections } from "@/lib/extension-auth";
@@ -22,9 +26,9 @@ export const dynamic = "force-dynamic";
 export default async function AccountPage({
   searchParams,
 }: {
-  searchParams: Promise<{ checkout?: string; extension?: string }>;
+  searchParams: Promise<{ checkout?: string; extension?: string; change?: string }>;
 }) {
-  const { checkout, extension } = await searchParams;
+  const { checkout, extension, change } = await searchParams;
   let viewer: AccountViewer | null = null;
   let initialEntitlement: AccountEntitlement | null = null;
   let extensionConnections: ExtensionConnection[] = [];
@@ -39,12 +43,9 @@ export default async function AccountPage({
       avatarColor: await avatarColorForUrl(avatar).catch(() => null),
     };
     try {
-      const ent = await entitlementForUser(session.user.id, session.user.email);
-      initialEntitlement = {
-        plan: ent.plan,
-        status: ent.status,
-        interval: ent.interval,
-      };
+      initialEntitlement = toAccountEntitlement(
+        await entitlementForUser(session.user.id, session.user.email),
+      );
     } catch {
       initialEntitlement = null;
     }
@@ -88,11 +89,14 @@ export default async function AccountPage({
             </h1>
             <p className="hero-enter hero-enter-3 mt-4 max-w-md text-[var(--muted)]">
               {checkout === "success"
-                ? "You're Pro. Connect the extension, then open Seek or Indeed."
-                : "Connect the extension, then open Seek or Indeed to start using your features."}
+                ? "You're Pro. Connect the extension, then open Indeed, LinkedIn, or Seek."
+                : "Connect the extension, then open Indeed, LinkedIn, or Seek to start using your features."}
             </p>
             <div className="hero-enter hero-enter-4 mt-8">
-              <AccountPlanCard />
+              <AccountPlanCard
+                priceIds={planPriceIds()}
+                openChangePlan={change === "plan"}
+              />
             </div>
           </div>
           <div className="hero-enter hero-enter-5 col-span-12 flex flex-col justify-center border-t border-[var(--line)] bg-white px-5 py-14 md:col-span-6 md:border-l md:border-t-0 md:px-8 md:py-16">

@@ -37,5 +37,6 @@ describe("extension prepare page", () => {
     expect(status).toContain("We couldn&apos;t detect the extension");
     expect(status).toContain("SEEK_CWS_URL");
     expect(status).toContain("INDEED_CWS_URL");
+    expect(status).toContain("LINKEDIN_CWS_URL");
   });
 });

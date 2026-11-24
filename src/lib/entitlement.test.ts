@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   emptyEntitlement,
   entitledExtensions,
@@ -74,16 +74,63 @@ describe("resolveEntitlement", () => {
 });
 
 describe("entitledExtensions", () => {
+  vi.stubEnv("PADDLE_PRICE_ID_MONTHLY", "pri_legacy");
+  vi.stubEnv("PADDLE_PRICE_ID_LENS_MONTHLY", "pri_lens");
+  vi.stubEnv("PADDLE_PRICE_ID_BIFOCAL_MONTHLY", "pri_bifocal");
+  vi.stubEnv("PADDLE_PRICE_ID_PANORAMA_MONTHLY", "pri_panorama");
+
+  const pro = resolveEntitlement(
+    { plan: "pro", status: "active", currentPeriodEnd: "2026-09-24T00:00:00.000Z" },
+    now,
+  );
+
   it("is empty for a free account", () => {
-    expect(entitledExtensions(emptyEntitlement())).toEqual([]);
+    expect(
+      entitledExtensions(emptyEntitlement(), {
+        paddlePriceId: "pri_panorama",
+        extensions: null,
+      }),
+    ).toEqual([]);
+    expect(entitledExtensions(pro, null)).toEqual([]);
   });
 
-  it("covers Seek and Indeed for a legacy Pro subscription", () => {
-    const pro = resolveEntitlement(
-      { plan: "pro", status: "active", currentPeriodEnd: "2026-09-24T00:00:00.000Z" },
-      now,
+  it("covers Indeed and Seek on the legacy price", () => {
+    expect(entitledExtensions(pro, { paddlePriceId: "pri_legacy", extensions: null })).toEqual([
+      "indeed",
+      "seek",
+    ]);
+  });
+
+  it("covers every extension on Panorama", () => {
+    expect(entitledExtensions(pro, { paddlePriceId: "pri_panorama", extensions: [] })).toEqual([
+      "indeed",
+      "linkedin",
+      "seek",
+    ]);
+  });
+
+  it("covers the stored picks on Lens and Bifocal", () => {
+    expect(
+      entitledExtensions(pro, { paddlePriceId: "pri_lens", extensions: ["linkedin"] }),
+    ).toEqual(["linkedin"]);
+    expect(
+      entitledExtensions(pro, {
+        paddlePriceId: "pri_bifocal",
+        extensions: ["indeed", "linkedin"],
+      }),
+    ).toEqual(["indeed", "linkedin"]);
+  });
+
+  it("never grants more than the plan allows or unknown names", () => {
+    expect(
+      entitledExtensions(pro, {
+        paddlePriceId: "pri_lens",
+        extensions: ["glassdoor", "seek", "indeed"],
+      }),
+    ).toEqual(["seek"]);
+    expect(entitledExtensions(pro, { paddlePriceId: "pri_bifocal", extensions: null })).toEqual(
+      [],
     );
-    expect(entitledExtensions(pro)).toEqual(["seek", "indeed"]);
   });
 });
 

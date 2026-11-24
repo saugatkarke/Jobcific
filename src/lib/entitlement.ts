@@ -1,4 +1,9 @@
-import type { ExtensionClient } from "./extensions";
+import {
+  EXTENSIONS,
+  normalizeExtensionPicks,
+  type ExtensionClient,
+} from "./extensions";
+import { planById, priceInfo } from "./pricing";
 
 export type Entitlement = {
   plan: "pro" | "free";
@@ -61,14 +66,28 @@ export function resolveEntitlement(
   };
 }
 
-const LEGACY_EXTENSIONS: readonly ExtensionClient[] = ["seek", "indeed"];
+const LEGACY_EXTENSIONS: readonly ExtensionClient[] = ["indeed", "seek"];
 
-/* Every Pro subscription today is the legacy plan covering Seek and Indeed. */
-export function entitledExtensions(resolved: Entitlement): ExtensionClient[] {
-  return resolved.plan === "pro" ? [...LEGACY_EXTENSIONS] : [];
+export type SubscriptionPicks = {
+  paddlePriceId: string;
+  extensions: readonly string[] | null;
+};
+
+export function entitledExtensions(
+  resolved: Entitlement,
+  row: SubscriptionPicks | null | undefined,
+): ExtensionClient[] {
+  if (resolved.plan !== "pro" || !row) return [];
+  const price = priceInfo(row.paddlePriceId);
+  if (!price || price.legacy) return [...LEGACY_EXTENSIONS];
+  const plan = planById(price.plan);
+  if (plan.extensionCount === EXTENSIONS.length) {
+    return EXTENSIONS.map((ext) => ext.client);
+  }
+  return normalizeExtensionPicks(row.extensions).slice(0, plan.extensionCount);
 }
 
-/* A null client is a token from before extensions were told apart, so Seek or Indeed. */
+/* A null client is a token from before extensions were told apart, so Indeed or Seek. */
 export function isClientEntitled(
   client: ExtensionClient | null,
   extensions: readonly ExtensionClient[],

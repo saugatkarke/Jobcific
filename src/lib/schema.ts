@@ -75,6 +75,12 @@ export const subscription = pgTable("subscription", {
   paddlePriceId: text("paddle_price_id").notNull(),
   status: text("status").notNull(),
   plan: text("plan").notNull(),
+  /* Null on legacy rows, which cover Indeed and Seek. */
+  extensions: text("extensions").array(),
+  /* The plan kept until a scheduled downgrade takes effect at carry_until. */
+  carryPriceId: text("carry_price_id"),
+  carryExtensions: text("carry_extensions").array(),
+  carryUntil: timestamp("carry_until", { withTimezone: true }),
   currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
   cancelAtPeriodEnd: boolean("cancel_at_period_end").notNull().default(false),
   occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),

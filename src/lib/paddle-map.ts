@@ -1,10 +1,13 @@
-import { isProPriceId } from "./pricing";
+import { normalizeExtensionPicks, type ExtensionClient } from "./extensions";
+import { planById, priceInfo } from "./pricing";
 
 export type MappedSubscription = {
   userId: string;
   paddleCustomerId: string;
   paddleSubscriptionId: string;
   paddlePriceId: string;
+  /* Null when Paddle sent no selection (legacy subscriptions). */
+  extensions: ExtensionClient[] | null;
   status: string;
   plan: "pro" | "free";
   currentPeriodEnd: Date | null;
@@ -32,22 +35,29 @@ export function mapPaddleSubscription(event: {
     id: string;
     status: string;
     customerId?: string;
-    customData?: { userId?: string } | null;
+    customData?: { userId?: string; extensions?: unknown } | null;
     currentBillingPeriod?: { endsAt?: string } | null;
     items?: Array<{ price?: { id?: string } }>;
     scheduledChange?: { action?: string } | null;
   };
 }): MappedSubscription | null {
   const priceId = firstPriceId(event.data);
-  if (!isProPriceId(priceId)) return null;
+  const price = priceInfo(priceId);
+  if (!price) return null;
   const userId = event.data.customData?.userId;
   if (!userId) return null;
   const ends = event.data.currentBillingPeriod?.endsAt;
+  const rawPicks = event.data.customData?.extensions;
+  const extensions = rawPicks === undefined ? null : normalizeExtensionPicks(rawPicks);
+  if (!price.legacy && extensions?.length !== planById(price.plan).extensionCount) {
+    console.warn("[paddle] extension selection does not match plan", event.data.id);
+  }
   return {
     userId,
     paddleCustomerId: String(event.data.customerId || ""),
     paddleSubscriptionId: event.data.id,
     paddlePriceId: priceId,
+    extensions,
     status: event.data.status,
     plan: "pro",
     currentPeriodEnd: ends ? new Date(ends) : null,

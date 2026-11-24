@@ -148,6 +148,19 @@ export function IconLogout({ className }: IconProps) {
   );
 }
 
+export function IconClose({ className }: IconProps) {
+  return (
+    <svg {...strokeProps(className)}>
+      <path
+        d="M6 6l12 12M18 6L6 18"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export function IconUser({ className }: IconProps) {
   return (
     <svg {...strokeProps(className)}>
@@ -341,6 +354,53 @@ export function IconBloom({
           opacity={petal.opacity}
         />
       ))}
+    </svg>
+  );
+}
+
+export function IconIcedCoffee({ className }: IconProps) {
+  return (
+    <svg {...strokeProps(className)}>
+      <path
+        d="M5 8.5h14M7.2 8.5a4.8 3.6 0 0 1 9.6 0M6.6 8.5 8 20.5h8l1.4-12M12.6 5 14.4 1.8"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M9.2 12.2h2.6v2.6H9.2zM12.6 15.4l2.3.7-.7 2.3-2.3-.7z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function IconMocktail({ className }: IconProps) {
+  return (
+    <svg {...strokeProps(className)}>
+      <path
+        d="M3 9h13l-6.5 6.5L3 9Z"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M9.5 15.5v4M6 19.5h7M8 11.5 5.5 3.5H3.5"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M14 9a3.5 3.5 0 0 1 7 0h-7ZM17.5 9V5.5"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }

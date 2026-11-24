@@ -8,7 +8,7 @@ import {
   SUPPORT_EMAIL,
   sellerIdentity,
 } from "@/lib/legal";
-import { MONTHLY_LABEL, YEARLY_LABEL } from "@/lib/pricing";
+import { PLANS, planPriceLabel } from "@/lib/pricing";
 
 export const metadata = legalMetadata(
   "Terms of Service",
@@ -29,7 +29,7 @@ export default function TermsPage() {
 
       <h2>1. The service</h2>
       <p>
-        {APP_NAME} helps you track Indeed and Seek listings in the browser.
+        {APP_NAME} helps you track Indeed, LinkedIn, and Seek listings in the browser.
         Free features include listing metrics, copy job description, save, a
         local Kanban board, CSV export, and local resume storage. Pro unlocks
         Hide / Unhide job cards and ATS score results. Job data and resumes stay
@@ -47,8 +47,8 @@ export default function TermsPage() {
       <h2>3. Subscriptions and billing</h2>
       <p>{PADDLE_MOR_STATEMENT}</p>
       <p>
-        Pro is a subscription. Current advertised prices are {MONTHLY_LABEL}{" "}
-        and {YEARLY_LABEL}. The price, currency, tax, and renewal date shown at
+        Pro is a subscription. Current advertised prices are{" "}
+        {PLANS.map(planPriceLabel).join("; ")}. The price, currency, tax, and renewal date shown at
         Paddle checkout are the amounts you agree to pay. Subscriptions renew
         automatically until you cancel. Cancel from{" "}
         <Link href="/account">Manage billing</Link> on your account, or through
@@ -72,16 +72,17 @@ export default function TermsPage() {
       <ul>
         <li>Scrape, overload, or reverse engineer the service except as allowed by law.</li>
         <li>Share a Pro account in a way that lets many people use one paid seat.</li>
-        <li>Use {APP_NAME} to break Indeed, Seek, or other third-party terms.</li>
+        <li>Use {APP_NAME} to break Indeed, LinkedIn, Seek, or other third-party terms.</li>
         <li>Attempt to access another person’s account or data.</li>
         <li>Use the service for anything illegal or harmful.</li>
       </ul>
 
       <h2>5. Third-party sites</h2>
       <p>
-        {APP_NAME} works on Indeed and Seek pages. Those sites are not our
-        products. Their layout, availability, and terms can change. We are not
-        responsible for Indeed, Seek, or any employer’s hiring process.
+        {APP_NAME} works on Indeed, LinkedIn, and Seek pages. Those sites are
+        not our products. Their layout, availability, and terms can change. We
+        are not responsible for Indeed, LinkedIn, Seek, or any employer’s hiring
+        process.
       </p>
 
       <h2>6. Intellectual property</h2>
@@ -95,8 +96,8 @@ export default function TermsPage() {
       <h2>7. Availability</h2>
       <p>
         We aim to keep the website, billing, and extension working, but we do
-        not guarantee uninterrupted access. Browser updates, Indeed or Seek
-        changes, or hosting issues can affect features.
+        not guarantee uninterrupted access. Browser updates, Indeed, LinkedIn,
+        or Seek changes, or hosting issues can affect features.
       </p>
 
       <h2>8. Disclaimer</h2>
