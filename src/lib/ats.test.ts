@@ -443,11 +443,11 @@ describe("ATS request budget", () => {
     );
   });
 
-  it("uses a per-attempt timeout that fits two attempts plus backoff", () => {
+  it("uses a per-attempt timeout that fits one attempt per model plus backoff", () => {
     expect(ATS_ATTEMPT_TIMEOUT_MS).toBeLessThan(
       ATS_PLATFORM_BUDGET_SECONDS * 1000,
     );
-    expect(ATS_MAX_ATTEMPTS).toBe(2);
+    expect(ATS_MAX_ATTEMPTS).toBe(4);
     expect(ATS_RETRY_BACKOFF_MS).toBeGreaterThan(0);
     expect(ATS_RETRY_BACKOFF_MS).toBeLessThanOrEqual(2000);
   });
@@ -529,6 +529,119 @@ describe("requestGeminiAts", () => {
     },
   );
 
+  it("walks the fallback models in order while each one is busy", async () => {
+    process.env.GEMINI_API_KEY = "server-key";
+    const fetchImpl = vi.fn().mockResolvedValue(
+      jsonResponse(503, {
+        error: { message: "This model is currently experiencing high demand." },
+      }),
+    );
+
+    await expect(
+      requestGeminiAts(
+        { resumeText: "Resume body", jobText: "Job description body" },
+        fetchImpl,
+        vi.fn().mockResolvedValue(undefined),
+      ),
+    ).rejects.toThrowError("MODEL_BUSY");
+
+    expect(fetchImpl.mock.calls.map((call) => call[0])).toEqual([
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent",
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent",
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent",
+    ]);
+    const prompts = fetchImpl.mock.calls.map((call) => {
+      const body = JSON.parse(String(call[1]?.body));
+      return JSON.stringify([body.systemInstruction, body.contents]);
+    });
+    expect(new Set(prompts).size).toBe(1);
+  });
+
+  it("keeps thinking low on the Flash fallbacks so it fits the output budget", () => {
+    process.env.GEMINI_API_KEY = "server-key";
+    const input = { resumeText: "Resume body", jobText: "Job description body" };
+    const config = (model: string) =>
+      JSON.parse(String(buildGeminiRequest(input, model).init.body)).generationConfig;
+
+    for (const model of ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"]) {
+      expect(config(model).thinkingConfig).toBeUndefined();
+      expect(config(model).maxOutputTokens).toBe(1024);
+    }
+    for (const model of ["gemini-3.6-flash", "gemini-3.8-flash"]) {
+      expect(config(model).thinkingConfig).toEqual({ thinkingLevel: "low" });
+      expect(config(model).maxOutputTokens).toBe(2048);
+    }
+  });
+
+  it("reports the fallback model when its response omits modelVersion", async () => {
+    process.env.GEMINI_API_KEY = "server-key";
+    const fallbackBody = (await okAtsResponse().json()) as Record<string, unknown>;
+    delete fallbackBody.modelVersion;
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse(503, { error: { message: "busy" } }))
+      .mockResolvedValueOnce(jsonResponse(200, fallbackBody));
+
+    const result = await requestGeminiAts(
+      { resumeText: "Resume body", jobText: "Job description body" },
+      fetchImpl,
+      vi.fn().mockResolvedValue(undefined),
+    );
+
+    expect(result.model).toBe("gemini-3.5-flash-lite");
+  });
+
+  it.each([429, 500, 503, 404])(
+    "moves to the next model after a %s response",
+    async (status) => {
+      process.env.GEMINI_API_KEY = "server-key";
+      vi.spyOn(console, "warn").mockImplementation(() => {});
+      const fetchImpl = vi
+        .fn()
+        .mockResolvedValueOnce(jsonResponse(status, { error: { message: "busy" } }))
+        .mockResolvedValueOnce(okAtsResponse());
+
+      await requestGeminiAts(
+        { resumeText: "Resume body", jobText: "Job description body" },
+        fetchImpl,
+        vi.fn().mockResolvedValue(undefined),
+      );
+
+      expect(fetchImpl.mock.calls[1]?.[0]).toBe(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
+      );
+    },
+  );
+
+  it.each([400, 403])(
+    "skips a fallback model that refuses the request with %s",
+    async (status) => {
+      process.env.GEMINI_API_KEY = "server-key";
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const fetchImpl = vi
+        .fn()
+        .mockResolvedValueOnce(jsonResponse(503, { error: { message: "busy" } }))
+        .mockResolvedValueOnce(jsonResponse(status, { error: { message: "refused" } }))
+        .mockResolvedValueOnce(okAtsResponse());
+
+      await requestGeminiAts(
+        { resumeText: "Resume body", jobText: "Job description body" },
+        fetchImpl,
+        vi.fn().mockResolvedValue(undefined),
+      );
+
+      expect(fetchImpl).toHaveBeenCalledTimes(3);
+      expect(fetchImpl.mock.calls[2]?.[0]).toBe(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent",
+      );
+      expect(warn).toHaveBeenCalledWith("Gemini model unavailable", {
+        model: "gemini-3.5-flash-lite",
+        status,
+      });
+    },
+  );
+
   it.each([400, 401, 403])(
     "normalizes bad-key/billing HTTP %s to SERVER_MISCONFIGURED without retrying",
     async (status) => {
@@ -552,7 +665,7 @@ describe("requestGeminiAts", () => {
     },
   );
 
-  it.each([404, 422])(
+  it.each([409, 422])(
     "keeps other non-transient HTTP %s as MODEL_RESPONSE_INVALID",
     async (status) => {
       process.env.GEMINI_API_KEY = "server-key";
@@ -576,7 +689,7 @@ describe("requestGeminiAts", () => {
     new TypeError("fetch failed"),
   ])("normalizes fetch rejection %s to AtsError", async (cause) => {
     process.env.GEMINI_API_KEY = "server-key";
-    const fetchImpl = vi.fn().mockRejectedValueOnce(cause).mockRejectedValueOnce(cause);
+    const fetchImpl = vi.fn().mockRejectedValue(cause);
     const sleepImpl = vi.fn().mockResolvedValue(undefined);
 
     await expect(

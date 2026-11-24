@@ -45,6 +45,13 @@ bounded output size. The design keeps the model explicit and cost-sensitive by
 using the stable Flash-Lite tier and relying only on the request contract we
 control, not model-default thinking assumptions.
 
+When a model is busy (429, 5xx, timeout) or unavailable (404, or 400 or 403 on
+a fallback), the server sends the same request to the next model, one attempt
+each: `gemini-3.1-flash-lite`, `gemini-3.5-flash-lite`, `gemini-3.6-flash`,
+then `gemini-3.8-flash`. The two Flash models think by default, so they are sent
+`thinkingLevel: "low"` and a 2,048 token output cap. Each attempt has a 12
+second timeout so the whole chain fits the route budget.
+
 The response must include:
 
 - overall integer score from 0 through 100;

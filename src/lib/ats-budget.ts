@@ -4,10 +4,10 @@
  */
 
 /** Per-attempt upstream timeout. */
-export const ATS_ATTEMPT_TIMEOUT_MS = 22_000;
+export const ATS_ATTEMPT_TIMEOUT_MS = 12_000;
 
-/** Total upstream attempts, including the first try. */
-export const ATS_MAX_ATTEMPTS = 2;
+/** Total upstream attempts, one per Gemini model in the fallback chain. */
+export const ATS_MAX_ATTEMPTS = 4;
 
 /** Backoff slept once between attempts after a transient failure. */
 export const ATS_RETRY_BACKOFF_MS = 750;

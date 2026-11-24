@@ -5,12 +5,29 @@ import {
 } from "./ats-budget";
 import { maskResumeContacts, scrubFeedbackText } from "./resume-privacy";
 
-const GEMINI_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent";
 const GEMINI_MODEL = "gemini-3.1-flash-lite";
+/**
+ * Tried in order, one attempt each. Capacity and rate limits are per model, so
+ * a busy model is skipped rather than retried.
+ */
+const GEMINI_MODELS = [
+  GEMINI_MODEL,
+  "gemini-3.5-flash-lite",
+  "gemini-3.6-flash",
+  "gemini-3.8-flash",
+] as const;
+/**
+ * Flash models think by default and thinking tokens count toward
+ * maxOutputTokens, so they get a low thinking level and a larger cap.
+ */
+const THINKING_MODELS: ReadonlySet<string> = new Set([
+  "gemini-3.6-flash",
+  "gemini-3.8-flash",
+]);
 const MAX_RESUME_CHARS = 40_000;
 const MAX_JOB_CHARS = 20_000;
 const MAX_OUTPUT_TOKENS = 1024;
+const MAX_OUTPUT_TOKENS_WITH_THINKING = 2048;
 
 const FEEDBACK_LIMITS = {
   strengths: 3,
@@ -312,12 +329,20 @@ export function validateAtsInput(value: unknown): AtsInput {
   return { resumeText, jobText, jobId };
 }
 
-export function buildGeminiRequest(input: AtsInput): GeminiRequest {
+function geminiUrl(model: string): string {
+  return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+}
+
+export function buildGeminiRequest(
+  input: AtsInput,
+  model: string = GEMINI_MODEL,
+): GeminiRequest {
   const normalized = validateAtsInput(input);
   const key = requireEnv("GEMINI_API_KEY");
+  const thinks = THINKING_MODELS.has(model);
 
   return {
-    url: GEMINI_URL,
+    url: geminiUrl(model),
     init: {
       method: "POST",
       headers: {
@@ -330,16 +355,20 @@ export function buildGeminiRequest(input: AtsInput): GeminiRequest {
         contents: [{ role: "user", parts: [{ text: promptText(normalized) }] }],
         generationConfig: {
           temperature: 0.2,
-          maxOutputTokens: MAX_OUTPUT_TOKENS,
+          maxOutputTokens: thinks ? MAX_OUTPUT_TOKENS_WITH_THINKING : MAX_OUTPUT_TOKENS,
           responseMimeType: "application/json",
           responseJsonSchema: ATS_RESPONSE_SCHEMA,
+          ...(thinks ? { thinkingConfig: { thinkingLevel: "low" } } : {}),
         },
       }),
     },
   };
 }
 
-export function parseGeminiResponse(value: unknown): AtsResult {
+export function parseGeminiResponse(
+  value: unknown,
+  model: string = GEMINI_MODEL,
+): AtsResult {
   try {
     const body = (value || {}) as GeminiResponse;
     const parsed = JSON.parse(extractCandidateText(body)) as Record<string, unknown>;
@@ -350,7 +379,7 @@ export function parseGeminiResponse(value: unknown): AtsResult {
       tips: sections.improvements.slice(),
       sections,
       dimensions: toDimensions(parsed.dimensions),
-      model: normalizeText(body.modelVersion) || GEMINI_MODEL,
+      model: normalizeText(body.modelVersion) || model,
       usage: toUsage(body.usageMetadata),
     };
   } catch (error) {
@@ -363,6 +392,15 @@ export function parseGeminiResponse(value: unknown): AtsResult {
 
 function isTransientStatus(status: number): boolean {
   return status === 429 || (status >= 500 && status < 600);
+}
+
+/**
+ * 404 means the model ID is retired or unknown. A 400 or 403 from a fallback
+ * model means it rejects this request shape or is closed to this project; on
+ * the first model the same codes mean a bad key or billing.
+ */
+function isModelUnavailable(status: number, attempt: number): boolean {
+  return status === 404 || (attempt > 0 && (status === 400 || status === 403));
 }
 
 /**
@@ -389,7 +427,8 @@ export async function requestGeminiAts(
   const lastAttempt = ATS_MAX_ATTEMPTS - 1;
 
   for (let attempt = 0; attempt < ATS_MAX_ATTEMPTS; attempt += 1) {
-    const request = buildGeminiRequest(input);
+    const model = GEMINI_MODELS[Math.min(attempt, GEMINI_MODELS.length - 1)];
+    const request = buildGeminiRequest(input, model);
     let response: Response;
     try {
       response = await fetchImpl(request.url, request.init);
@@ -401,9 +440,12 @@ export async function requestGeminiAts(
       continue;
     }
     if (response.ok) {
-      return parseGeminiResponse(await response.json());
+      return parseGeminiResponse(await response.json(), model);
     }
-    if (!isTransientStatus(response.status)) {
+    const modelUnavailable = isModelUnavailable(response.status, attempt);
+    if (modelUnavailable) {
+      console.warn("Gemini model unavailable", { model, status: response.status });
+    } else if (!isTransientStatus(response.status)) {
       fail(upstreamFailureCode(response.status));
     }
     if (attempt === lastAttempt) {
